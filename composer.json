@@ -1,0 +1,10 @@
+{
+    "name": "listing-items/listing-items",
+    "description": "Listing Items WordPress plugin",
+    "type": "wordpress-plugin",
+    "autoload": {
+        "psr-4": {
+            "ListingItems\\": "src/"
+        }
+    }
+}

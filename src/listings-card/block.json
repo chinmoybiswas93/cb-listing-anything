@@ -1,0 +1,49 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "listing-items/listings-card",
+	"title": "Listings Card",
+	"category": "widgets",
+	"icon": "list-view",
+	"description": "Display listings in a card grid layout with title, price, location, and other details.",
+	"keywords": [ "listings", "cards", "grid", "items" ],
+	"textdomain": "listing-items",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"attributes": {
+		"align": {
+			"type": "string",
+			"default": "wide"
+		},
+		"postsPerPage": {
+			"type": "number",
+			"default": 6
+		},
+		"columns": {
+			"type": "number",
+			"default": 3
+		},
+		"category": {
+			"type": "number",
+			"default": 0
+		},
+		"showExcerpt": {
+			"type": "boolean",
+			"default": true
+		},
+		"showPrice": {
+			"type": "boolean",
+			"default": true
+		},
+		"showLocation": {
+			"type": "boolean",
+			"default": true
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": [ "wide", "full" ]
+	},
+	"render": "file:./render.php"
+}
