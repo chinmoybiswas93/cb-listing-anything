@@ -29,7 +29,7 @@ if ( $category > 0 ) {
 $query = new WP_Query( $args );
 
 if ( ! $query->have_posts() ) {
-	echo '<p>' . esc_html__( 'No listings found.', 'listing-items' ) . '</p>';
+	echo '<p>' . esc_html__( 'No listings found.', 'cb-listing-anything' ) . '</p>';
 	return;
 }
 
@@ -66,7 +66,7 @@ $wrapper = get_block_wrapper_attributes( array(
 			<?php endif; ?>
 			<div class="listing-item-card__footer">
 				<a href="<?php the_permalink(); ?>" class="listing-item-card__link">
-					<?php esc_html_e( 'View Details', 'listing-items' ); ?>
+					<?php esc_html_e( 'View Details', 'cb-listing-anything' ); ?>
 				</a>
 			</div>
 		</div>

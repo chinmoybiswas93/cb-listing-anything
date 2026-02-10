@@ -1,6 +1,6 @@
 <?php
 
-namespace ListingItems\Models;
+namespace CBListingAnything\Models;
 
 class ListingMeta {
 

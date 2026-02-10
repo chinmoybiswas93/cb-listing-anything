@@ -1,11 +1,11 @@
 <?php
 
-namespace ListingItems\Core;
+namespace CBListingAnything\Core;
 
-use ListingItems\Controllers\BlockController;
-use ListingItems\Controllers\MetaBoxController;
-use ListingItems\Controllers\PostTypeController;
-use ListingItems\Controllers\TaxonomyController;
+use CBListingAnything\Controllers\BlockController;
+use CBListingAnything\Controllers\MetaBoxController;
+use CBListingAnything\Controllers\PostTypeController;
+use CBListingAnything\Controllers\TaxonomyController;
 
 class Plugin {
 
@@ -87,7 +87,7 @@ class Plugin {
 	 * @return void
 	 */
 	public function load_textdomain() {
-		load_plugin_textdomain( 'listing-items', false, dirname( plugin_basename( LISTING_ITEMS_PLUGIN_FILE ) ) . '/languages' );
+		load_plugin_textdomain( 'cb-listing-anything', false, dirname( plugin_basename( CB_LISTING_ANYTHING_PLUGIN_FILE ) ) . '/languages' );
 	}
 
 	/**

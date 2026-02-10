@@ -1,8 +1,8 @@
 <?php
 
-namespace ListingItems\Controllers;
+namespace CBListingAnything\Controllers;
 
-use ListingItems\Models\ListingMeta;
+use CBListingAnything\Models\ListingMeta;
 use WP_Post;
 
 class MetaBoxController {
@@ -25,7 +25,7 @@ class MetaBoxController {
 	public function add_meta_boxes() {
 		add_meta_box(
 			'listing_details',
-			__( 'Listing Details', 'listing-items' ),
+			__( 'Listing Details', 'cb-listing-anything' ),
 			array( $this, 'render_listing_details_meta_box' ),
 			'listing',
 			'normal',
@@ -47,7 +47,7 @@ class MetaBoxController {
 			$values[ $field ] = get_post_meta( $post->ID, ListingMeta::key( $field ), true );
 		}
 
-		include LISTING_ITEMS_PLUGIN_DIR . 'src/Views/admin/meta-box-listing-details.php';
+		include CB_LISTING_ANYTHING_PLUGIN_DIR . 'src/Views/admin/meta-box-listing-details.php';
 	}
 
 	/**

@@ -1,10 +1,10 @@
 {
-    "name": "listing-items/listing-items",
-    "description": "Listing Items WordPress plugin",
+    "name": "cb-listing-anything/cb-listing-anything",
+    "description": "CB Listing Anything WordPress plugin",
     "type": "wordpress-plugin",
     "autoload": {
         "psr-4": {
-            "ListingItems\\": "src/"
+            "CBListingAnything\\": "src/"
         }
     }
 }
