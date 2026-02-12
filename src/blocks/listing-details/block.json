@@ -1,0 +1,42 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "cb-listing-anything/listing-details",
+	"title": "Listing Details",
+	"category": "widgets",
+	"icon": "info-outline",
+	"description": "Display listing meta data such as price, location, contact info, and website on a single listing page.",
+	"keywords": [ "listing", "details", "meta", "info" ],
+	"textdomain": "cb-listing-anything",
+	"usesContext": [ "postId", "postType" ],
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"attributes": {
+		"showPrice": {
+			"type": "boolean",
+			"default": true
+		},
+		"showLocation": {
+			"type": "boolean",
+			"default": true
+		},
+		"showAddress": {
+			"type": "boolean",
+			"default": true
+		},
+		"showContact": {
+			"type": "boolean",
+			"default": true
+		},
+		"showWebsite": {
+			"type": "boolean",
+			"default": true
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": [ "wide", "full" ]
+	},
+	"render": "file:./render.php"
+}

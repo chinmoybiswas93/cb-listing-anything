@@ -16,6 +16,10 @@
 			"type": "string",
 			"default": "wide"
 		},
+		"useCurrentQuery": {
+			"type": "boolean",
+			"default": false
+		},
 		"postsPerPage": {
 			"type": "number",
 			"default": 6

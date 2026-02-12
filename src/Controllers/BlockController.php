@@ -2,17 +2,19 @@
 
 namespace CBListingAnything\Controllers;
 
-class BlockController {
+class BlockController
+{
 
 	/**
 	 * Initialize block hooks.
 	 *
 	 * @return void
 	 */
-	public function init() {
-		add_action( 'init', array( $this, 'register_blocks' ) );
-		add_action( 'enqueue_block_editor_assets', array( $this, 'localize_block_data' ) );
-		add_action( 'enqueue_block_editor_assets', array( $this, 'unregister_taxonomy_blocks' ) );
+	public function init()
+	{
+		add_action('init', array($this, 'register_blocks'));
+		add_action('enqueue_block_editor_assets', array($this, 'localize_block_data'));
+		add_action('enqueue_block_editor_assets', array($this, 'unregister_taxonomy_blocks'));
 	}
 
 	/**
@@ -20,14 +22,17 @@ class BlockController {
 	 *
 	 * @return void
 	 */
-	public function register_blocks() {
-		$block_dir = CB_LISTING_ANYTHING_PLUGIN_DIR . 'build/listings-card';
+	public function register_blocks()
+	{
+		$blocks = array( 'listings-card', 'listing-details' );
 
-		if ( ! file_exists( $block_dir . '/block.json' ) ) {
-			return;
+		foreach ( $blocks as $block ) {
+			$block_dir = CB_LISTING_ANYTHING_PLUGIN_DIR . 'build/' . $block;
+
+			if ( file_exists( $block_dir . '/block.json' ) ) {
+				register_block_type( $block_dir );
+			}
 		}
-
-		register_block_type( $block_dir );
 	}
 
 	/**
@@ -35,23 +40,24 @@ class BlockController {
 	 *
 	 * @return void
 	 */
-	public function unregister_taxonomy_blocks() {
+	public function unregister_taxonomy_blocks()
+	{
 		$script = <<<JS
-wp.domReady( function() {
-	wp.blocks.unregisterBlockVariation( 'core/post-terms', 'listing_category' );
-	wp.blocks.unregisterBlockVariation( 'core/post-terms', 'listing_tag' );
-} );
-JS;
+		wp.domReady( function() {
+			wp.blocks.unregisterBlockVariation( 'core/post-terms', 'listing_category' );
+			wp.blocks.unregisterBlockVariation( 'core/post-terms', 'listing_tag' );
+		} );
+		JS;
 
 		wp_register_script(
 			'cb-listing-anything-unregister-variations',
 			'',
-			array( 'wp-blocks', 'wp-dom-ready' ),
+			array('wp-blocks', 'wp-dom-ready'),
 			CB_LISTING_ANYTHING_VERSION,
 			true
 		);
-		wp_enqueue_script( 'cb-listing-anything-unregister-variations' );
-		wp_add_inline_script( 'cb-listing-anything-unregister-variations', $script );
+		wp_enqueue_script('cb-listing-anything-unregister-variations');
+		wp_add_inline_script('cb-listing-anything-unregister-variations', $script);
 	}
 
 	/**
@@ -59,7 +65,8 @@ JS;
 	 *
 	 * @return void
 	 */
-	public function localize_block_data() {
+	public function localize_block_data()
+	{
 		$terms = get_terms(
 			array(
 				'taxonomy'   => 'listing_category',
@@ -69,13 +76,13 @@ JS;
 
 		$options = array(
 			array(
-				'label' => __( 'All Categories', 'cb-listing-anything' ),
+				'label' => __('All Categories', 'cb-listing-anything'),
 				'value' => 0,
 			),
 		);
 
-		if ( ! is_wp_error( $terms ) && ! empty( $terms ) ) {
-			foreach ( $terms as $term ) {
+		if (! is_wp_error($terms) && ! empty($terms)) {
+			foreach ($terms as $term) {
 				$options[] = array(
 					'label' => $term->name,
 					'value' => $term->term_id,
@@ -85,7 +92,7 @@ JS;
 
 		wp_add_inline_script(
 			'cb-listing-anything-listings-card-editor-script',
-			'window.cbListingAnythingData = ' . wp_json_encode( array( 'categories' => $options ) ) . ';',
+			'window.cbListingAnythingData = ' . wp_json_encode(array('categories' => $options)) . ';',
 			'before'
 		);
 	}

@@ -3,30 +3,46 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$per_page      = isset( $attributes['postsPerPage'] ) ? absint( $attributes['postsPerPage'] ) : 6;
-$columns       = isset( $attributes['columns'] ) ? absint( $attributes['columns'] ) : 3;
-$category      = isset( $attributes['category'] ) ? absint( $attributes['category'] ) : 0;
-$show_excerpt  = isset( $attributes['showExcerpt'] ) ? $attributes['showExcerpt'] : true;
-$show_price    = isset( $attributes['showPrice'] ) ? $attributes['showPrice'] : true;
-$show_location = isset( $attributes['showLocation'] ) ? $attributes['showLocation'] : true;
+$use_current_query = isset( $attributes['useCurrentQuery'] ) ? $attributes['useCurrentQuery'] : false;
+$per_page          = isset( $attributes['postsPerPage'] ) ? absint( $attributes['postsPerPage'] ) : 6;
+$columns           = isset( $attributes['columns'] ) ? absint( $attributes['columns'] ) : 3;
+$category          = isset( $attributes['category'] ) ? absint( $attributes['category'] ) : 0;
+$show_excerpt      = isset( $attributes['showExcerpt'] ) ? $attributes['showExcerpt'] : true;
+$show_price        = isset( $attributes['showPrice'] ) ? $attributes['showPrice'] : true;
+$show_location     = isset( $attributes['showLocation'] ) ? $attributes['showLocation'] : true;
 
-$args = array(
-	'post_type'      => 'listing',
-	'posts_per_page' => $per_page,
-	'post_status'    => 'publish',
-);
+if ( $use_current_query && ! ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) {
+	global $wp_query;
 
-if ( $category > 0 ) {
-	$args['tax_query'] = array(
+	$args = array_merge(
+		$wp_query->query_vars,
 		array(
-			'taxonomy' => 'listing_category',
-			'field'    => 'term_id',
-			'terms'    => $category,
-		),
+			'post_type'      => 'listing',
+			'posts_per_page' => $per_page,
+			'post_status'    => 'publish',
+		)
 	);
-}
 
-$query = new WP_Query( $args );
+	$query = new WP_Query( $args );
+} else {
+	$args = array(
+		'post_type'      => 'listing',
+		'posts_per_page' => $per_page,
+		'post_status'    => 'publish',
+	);
+
+	if ( ! $use_current_query && $category > 0 ) {
+		$args['tax_query'] = array(
+			array(
+				'taxonomy' => 'listing_category',
+				'field'    => 'term_id',
+				'terms'    => $category,
+			),
+		);
+	}
+
+	$query = new WP_Query( $args );
+}
 
 if ( ! $query->have_posts() ) {
 	echo '<p>' . esc_html__( 'No listings found.', 'cb-listing-anything' ) . '</p>';

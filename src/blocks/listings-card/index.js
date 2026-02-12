@@ -10,6 +10,7 @@ import './editor.scss';
 registerBlockType( metadata.name, {
 	edit( { attributes, setAttributes } ) {
 		const {
+			useCurrentQuery,
 			postsPerPage,
 			columns,
 			category,
@@ -27,6 +28,17 @@ registerBlockType( metadata.name, {
 		return (
 			<>
 				<InspectorControls>
+					<PanelBody title={ __( 'Query Settings', 'cb-listing-anything' ) }>
+						<ToggleControl
+							label={ __( 'Use Current Query', 'cb-listing-anything' ) }
+							help={ useCurrentQuery
+								? __( 'Shows listings based on the current page/template query (archive, category, tag).', 'cb-listing-anything' )
+								: __( 'Uses a custom query with the settings below.', 'cb-listing-anything' )
+							}
+							checked={ useCurrentQuery }
+							onChange={ ( value ) => setAttributes( { useCurrentQuery: value } ) }
+						/>
+					</PanelBody>
 					<PanelBody title={ __( 'Display Settings', 'cb-listing-anything' ) }>
 						<RangeControl
 							label={ __( 'Number of Listings', 'cb-listing-anything' ) }
@@ -42,12 +54,14 @@ registerBlockType( metadata.name, {
 							min={ 1 }
 							max={ 4 }
 						/>
-						<SelectControl
-							label={ __( 'Category', 'cb-listing-anything' ) }
-							value={ category.toString() }
-							options={ categories }
-							onChange={ ( value ) => setAttributes( { category: parseInt( value, 10 ) } ) }
-						/>
+						{ ! useCurrentQuery && (
+							<SelectControl
+								label={ __( 'Category', 'cb-listing-anything' ) }
+								value={ category.toString() }
+								options={ categories }
+								onChange={ ( value ) => setAttributes( { category: parseInt( value, 10 ) } ) }
+							/>
+						) }
 					</PanelBody>
 					<PanelBody title={ __( 'Content Settings', 'cb-listing-anything' ) }>
 						<ToggleControl
