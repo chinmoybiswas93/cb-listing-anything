@@ -5,7 +5,7 @@
 	"title": "Listings Card",
 	"category": "widgets",
 	"icon": "list-view",
-	"description": "Display listings in a card grid layout with title, price, location, and other details.",
+	"description": "Display listings in a card grid layout with image, categories, open status, tags, and action buttons.",
 	"keywords": [ "listings", "cards", "grid", "items" ],
 	"textdomain": "cb-listing-anything",
 	"editorScript": "file:./index.js",
@@ -32,7 +32,11 @@
 			"type": "number",
 			"default": 0
 		},
-		"showExcerpt": {
+		"showCategories": {
+			"type": "boolean",
+			"default": true
+		},
+		"showOpenStatus": {
 			"type": "boolean",
 			"default": true
 		},
@@ -40,7 +44,15 @@
 			"type": "boolean",
 			"default": true
 		},
-		"showLocation": {
+		"showTags": {
+			"type": "boolean",
+			"default": true
+		},
+		"showAddress": {
+			"type": "boolean",
+			"default": true
+		},
+		"showCallButton": {
 			"type": "boolean",
 			"default": true
 		}

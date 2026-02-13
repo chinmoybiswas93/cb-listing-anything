@@ -5,6 +5,7 @@ namespace CBListingAnything\Core;
 use CBListingAnything\Controllers\BlockController;
 use CBListingAnything\Controllers\MetaBoxController;
 use CBListingAnything\Controllers\PostTypeController;
+use CBListingAnything\Controllers\SettingsController;
 use CBListingAnything\Controllers\TaxonomyController;
 
 class Plugin {
@@ -45,6 +46,11 @@ class Plugin {
 	private $block_controller;
 
 	/**
+	 * @var SettingsController
+	 */
+	private $settings_controller;
+
+	/**
 	 * Get plugin singleton instance.
 	 *
 	 * @return Plugin
@@ -65,6 +71,7 @@ class Plugin {
 		$this->taxonomy_controller  = new TaxonomyController();
 		$this->meta_box_controller  = new MetaBoxController();
 		$this->block_controller     = new BlockController();
+		$this->settings_controller  = new SettingsController();
 	}
 
 	/**
@@ -79,6 +86,7 @@ class Plugin {
 
 		$this->meta_box_controller->init();
 		$this->block_controller->init();
+		$this->settings_controller->init();
 	}
 
 	/**

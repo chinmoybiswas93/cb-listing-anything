@@ -14,9 +14,12 @@ registerBlockType( metadata.name, {
 			postsPerPage,
 			columns,
 			category,
-			showExcerpt,
+			showCategories,
+			showOpenStatus,
 			showPrice,
-			showLocation,
+			showTags,
+			showAddress,
+			showCallButton,
 		} = attributes;
 
 		const blockProps = useBlockProps();
@@ -32,7 +35,7 @@ registerBlockType( metadata.name, {
 						<ToggleControl
 							label={ __( 'Use Current Query', 'cb-listing-anything' ) }
 							help={ useCurrentQuery
-								? __( 'Shows listings based on the current page/template query (archive, category, tag).', 'cb-listing-anything' )
+								? __( 'Shows listings based on the current page/template query.', 'cb-listing-anything' )
 								: __( 'Uses a custom query with the settings below.', 'cb-listing-anything' )
 							}
 							checked={ useCurrentQuery }
@@ -63,11 +66,16 @@ registerBlockType( metadata.name, {
 							/>
 						) }
 					</PanelBody>
-					<PanelBody title={ __( 'Content Settings', 'cb-listing-anything' ) }>
+					<PanelBody title={ __( 'Card Elements', 'cb-listing-anything' ) }>
 						<ToggleControl
-							label={ __( 'Show Excerpt', 'cb-listing-anything' ) }
-							checked={ showExcerpt }
-							onChange={ ( value ) => setAttributes( { showExcerpt: value } ) }
+							label={ __( 'Show Categories', 'cb-listing-anything' ) }
+							checked={ showCategories }
+							onChange={ ( value ) => setAttributes( { showCategories: value } ) }
+						/>
+						<ToggleControl
+							label={ __( 'Show Open/Closed Status', 'cb-listing-anything' ) }
+							checked={ showOpenStatus }
+							onChange={ ( value ) => setAttributes( { showOpenStatus: value } ) }
 						/>
 						<ToggleControl
 							label={ __( 'Show Price', 'cb-listing-anything' ) }
@@ -75,9 +83,19 @@ registerBlockType( metadata.name, {
 							onChange={ ( value ) => setAttributes( { showPrice: value } ) }
 						/>
 						<ToggleControl
-							label={ __( 'Show Location', 'cb-listing-anything' ) }
-							checked={ showLocation }
-							onChange={ ( value ) => setAttributes( { showLocation: value } ) }
+							label={ __( 'Show Tags', 'cb-listing-anything' ) }
+							checked={ showTags }
+							onChange={ ( value ) => setAttributes( { showTags: value } ) }
+						/>
+						<ToggleControl
+							label={ __( 'Show Address', 'cb-listing-anything' ) }
+							checked={ showAddress }
+							onChange={ ( value ) => setAttributes( { showAddress: value } ) }
+						/>
+						<ToggleControl
+							label={ __( 'Show Call Button', 'cb-listing-anything' ) }
+							checked={ showCallButton }
+							onChange={ ( value ) => setAttributes( { showCallButton: value } ) }
 						/>
 					</PanelBody>
 				</InspectorControls>

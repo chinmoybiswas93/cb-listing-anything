@@ -49,7 +49,7 @@ class PostTypeController {
 			'hierarchical'        => false,
 			'public'              => true,
 			'show_ui'             => true,
-			'show_in_menu'        => true,
+			'show_in_menu'        => 'cb-listing-anything',
 			'menu_position'       => 20,
 			'menu_icon'           => 'dashicons-list-view',
 			'show_in_admin_bar'   => true,
