@@ -3,7 +3,7 @@
 	"version": "1.0.0",
 	"private": true,
 	"scripts": {
-		"build": "wp-scripts build --webpack-src-dir=src/blocks --output-path=build && cp src/blocks/listings-card/render.php build/listings-card/render.php && cp src/blocks/listing-details/render.php build/listing-details/render.php",
+		"build": "wp-scripts build --webpack-src-dir=src/blocks --output-path=build && cp src/blocks/listings-card/render.php build/listings-card/render.php && cp src/blocks/listing-details/render.php build/listing-details/render.php && cp src/blocks/related-listings/render.php build/related-listings/render.php",
 		"start": "wp-scripts start --webpack-src-dir=src/blocks --output-path=build"
 	},
 	"devDependencies": {

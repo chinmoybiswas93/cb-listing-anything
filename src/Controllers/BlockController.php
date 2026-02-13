@@ -25,7 +25,7 @@ class BlockController
 	 */
 	public function register_blocks()
 	{
-		$blocks = array( 'listings-card', 'listing-details' );
+		$blocks = array( 'listings-card', 'listing-details', 'related-listings' );
 
 		foreach ( $blocks as $block ) {
 			$block_dir = CB_LISTING_ANYTHING_PLUGIN_DIR . 'build/' . $block;
@@ -77,13 +77,18 @@ class BlockController
 			return $allowed_blocks;
 		}
 
+		$restricted = array(
+			'cb-listing-anything/listing-details',
+			'cb-listing-anything/related-listings',
+		);
+
 		if ( true === $allowed_blocks ) {
 			$all = array_keys( \WP_Block_Type_Registry::get_instance()->get_all_registered() );
-			return array_values( array_diff( $all, array( 'cb-listing-anything/listing-details' ) ) );
+			return array_values( array_diff( $all, $restricted ) );
 		}
 
 		if ( is_array( $allowed_blocks ) ) {
-			return array_values( array_diff( $allowed_blocks, array( 'cb-listing-anything/listing-details' ) ) );
+			return array_values( array_diff( $allowed_blocks, $restricted ) );
 		}
 
 		return $allowed_blocks;
