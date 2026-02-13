@@ -15,6 +15,7 @@ class BlockController
 		add_action('init', array($this, 'register_blocks'));
 		add_action('enqueue_block_editor_assets', array($this, 'localize_block_data'));
 		add_action('enqueue_block_editor_assets', array($this, 'unregister_taxonomy_blocks'));
+		add_filter('allowed_block_types_all', array($this, 'restrict_listing_details_block'), 10, 2);
 	}
 
 	/**
@@ -58,6 +59,34 @@ class BlockController
 		);
 		wp_enqueue_script('cb-listing-anything-unregister-variations');
 		wp_add_inline_script('cb-listing-anything-unregister-variations', $script);
+	}
+
+	/**
+	 * Only allow Listing Details block in listing contexts.
+	 *
+	 * @param bool|string[] $allowed_blocks
+	 * @param \WP_Block_Editor_Context $editor_context
+	 * @return bool|string[]
+	 */
+	public function restrict_listing_details_block( $allowed_blocks, $editor_context ) {
+		if ( 'core/edit-site' === $editor_context->name ) {
+			return $allowed_blocks;
+		}
+
+		if ( isset( $editor_context->post ) && 'listing' === $editor_context->post->post_type ) {
+			return $allowed_blocks;
+		}
+
+		if ( true === $allowed_blocks ) {
+			$all = array_keys( \WP_Block_Type_Registry::get_instance()->get_all_registered() );
+			return array_values( array_diff( $all, array( 'cb-listing-anything/listing-details' ) ) );
+		}
+
+		if ( is_array( $allowed_blocks ) ) {
+			return array_values( array_diff( $allowed_blocks, array( 'cb-listing-anything/listing-details' ) ) );
+		}
+
+		return $allowed_blocks;
 	}
 
 	/**

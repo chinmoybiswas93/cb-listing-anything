@@ -1,3 +1,15 @@
-.cb-listing-details {
+.cb-listing-single {
 	width: 100%;
+
+	.cb-listing-single__gallery-track {
+		pointer-events: none;
+	}
+
+	.cb-listing-single__gallery-arrow {
+		display: none;
+	}
+
+	.cb-listing-single__cta {
+		pointer-events: none;
+	}
 }
