@@ -65,3 +65,13 @@ function cb_listing_anything_init() {
 }
 
 add_action( 'plugins_loaded', 'cb_listing_anything_init' );
+
+/**
+ * Get the category image attachment ID for a listing category term.
+ *
+ * @param int $term_id Listing category term ID.
+ * @return int Attachment ID, or 0 if none set.
+ */
+function cb_listing_anything_get_category_image_id( $term_id ) {
+	return (int) get_term_meta( $term_id, 'cb_listing_anything_category_image', true );
+}

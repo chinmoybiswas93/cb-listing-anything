@@ -1,0 +1,34 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "cb-listing-anything/listing-search",
+	"title": "Listing Search",
+	"category": "widgets",
+	"icon": "search",
+	"description": "Search bar with keyword input and category dropdown to find listings.",
+	"keywords": [ "search", "listing", "find", "filter" ],
+	"textdomain": "cb-listing-anything",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"viewScript": "file:./view.js",
+	"attributes": {
+		"align": {
+			"type": "string",
+			"default": "wide"
+		},
+		"placeholder": {
+			"type": "string",
+			"default": "Keywords"
+		},
+		"buttonText": {
+			"type": "string",
+			"default": "Search"
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": [ "wide", "full" ]
+	},
+	"render": "file:./render.php"
+}

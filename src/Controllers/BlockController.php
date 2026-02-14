@@ -25,7 +25,7 @@ class BlockController
 	 */
 	public function register_blocks()
 	{
-		$blocks = array( 'listings-card', 'listing-details', 'related-listings' );
+		$blocks = array( 'listings-card', 'listing-details', 'related-listings', 'listing-search', 'categories-slider' );
 
 		foreach ( $blocks as $block ) {
 			$block_dir = CB_LISTING_ANYTHING_PLUGIN_DIR . 'build/' . $block;

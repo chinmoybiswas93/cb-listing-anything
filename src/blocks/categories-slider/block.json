@@ -1,0 +1,54 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "cb-listing-anything/categories-slider",
+	"title": "Categories Slider",
+	"category": "widgets",
+	"icon": "slides",
+	"description": "Display listing categories in a horizontal slider with image, name, and count.",
+	"keywords": [ "categories", "slider", "carousel", "listings" ],
+	"textdomain": "cb-listing-anything",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"viewScript": "file:./view.js",
+	"attributes": {
+		"align": {
+			"type": "string",
+			"default": "wide"
+		},
+		"buttonPosition": {
+			"type": "string",
+			"default": "outside"
+		},
+		"buttonOutsideOffset": {
+			"type": "number",
+			"default": 0
+		},
+		"itemsToShow": {
+			"type": "number",
+			"default": 6
+		},
+		"height": {
+			"type": "number",
+			"default": 280
+		},
+		"showName": {
+			"type": "boolean",
+			"default": true
+		},
+		"showCount": {
+			"type": "boolean",
+			"default": true
+		},
+		"selectedCategoryIds": {
+			"type": "array",
+			"default": []
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": [ "wide", "full" ]
+	},
+	"render": "file:./render.php"
+}

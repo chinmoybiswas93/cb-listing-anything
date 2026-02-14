@@ -1,0 +1,9 @@
+.wp-block-cb-listing-anything-listing-search {
+	width: 100%;
+
+	.cb-listing-search__input,
+	.cb-listing-search__select,
+	.cb-listing-search__button {
+		pointer-events: none;
+	}
+}

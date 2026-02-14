@@ -3,8 +3,10 @@
 namespace CBListingAnything\Core;
 
 use CBListingAnything\Controllers\BlockController;
+use CBListingAnything\Controllers\CategoryImageController;
 use CBListingAnything\Controllers\MetaBoxController;
 use CBListingAnything\Controllers\PostTypeController;
+use CBListingAnything\Controllers\SearchController;
 use CBListingAnything\Controllers\SettingsController;
 use CBListingAnything\Controllers\TaxonomyController;
 
@@ -46,9 +48,19 @@ class Plugin {
 	private $block_controller;
 
 	/**
+	 * @var SearchController
+	 */
+	private $search_controller;
+
+	/**
 	 * @var SettingsController
 	 */
 	private $settings_controller;
+
+	/**
+	 * @var CategoryImageController
+	 */
+	private $category_image_controller;
 
 	/**
 	 * Get plugin singleton instance.
@@ -67,11 +79,13 @@ class Plugin {
 	 * Plugin constructor.
 	 */
 	private function __construct() {
-		$this->post_type_controller = new PostTypeController();
-		$this->taxonomy_controller  = new TaxonomyController();
-		$this->meta_box_controller  = new MetaBoxController();
-		$this->block_controller     = new BlockController();
-		$this->settings_controller  = new SettingsController();
+		$this->post_type_controller      = new PostTypeController();
+		$this->taxonomy_controller       = new TaxonomyController();
+		$this->meta_box_controller       = new MetaBoxController();
+		$this->block_controller          = new BlockController();
+		$this->search_controller         = new SearchController();
+		$this->settings_controller       = new SettingsController();
+		$this->category_image_controller = new CategoryImageController();
 	}
 
 	/**
@@ -86,7 +100,9 @@ class Plugin {
 
 		$this->meta_box_controller->init();
 		$this->block_controller->init();
+		$this->search_controller->init();
 		$this->settings_controller->init();
+		$this->category_image_controller->init();
 	}
 
 	/**
