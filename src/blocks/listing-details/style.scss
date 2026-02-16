@@ -3,8 +3,10 @@
 	width: 100%;
 }
 
-// Breadcrumb
-.cb-listing-single__breadcrumb {
+// Breadcrumb - using shared breadcrumb styles
+// Keep these for backward compatibility with existing usage
+.cb-listing-single__breadcrumb,
+.cb-listing-breadcrumb {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
@@ -24,11 +26,13 @@
 	}
 }
 
-.cb-listing-single__breadcrumb-sep {
+.cb-listing-single__breadcrumb-sep,
+.cb-listing-breadcrumb__sep {
 	color: #ccc;
 }
 
-.cb-listing-single__breadcrumb-current {
+.cb-listing-single__breadcrumb-current,
+.cb-listing-breadcrumb__current {
 	color: #333;
 }
 

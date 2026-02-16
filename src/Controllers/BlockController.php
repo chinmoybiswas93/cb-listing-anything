@@ -28,7 +28,7 @@ class BlockController extends AbstractController {
 	 */
 	public function register_blocks()
 	{
-		$blocks = array( 'listings-card', 'listing-details', 'related-listings', 'listing-search', 'categories-slider', 'listings-archive' );
+		$blocks = array( 'listings-card', 'listing-details', 'related-listings', 'listing-search', 'categories-slider', 'listings-archive', 'listing-breadcrumb' );
 
 		foreach ( $blocks as $block ) {
 			$block_dir = CB_LISTING_ANYTHING_PLUGIN_DIR . 'build/' . $block;

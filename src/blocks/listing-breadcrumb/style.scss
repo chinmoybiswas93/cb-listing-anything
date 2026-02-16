@@ -1,0 +1,33 @@
+.cb-listing-breadcrumb-wrapper {
+	width: 100%;
+	margin: 0;
+}
+
+.cb-listing-breadcrumb {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-start; // Default to left alignment
+	gap: 0.4rem;
+	font-size: 0.82rem;
+	color: #999;
+	margin-bottom: 1rem;
+
+	a {
+		color: #666;
+		text-decoration: none;
+		transition: color 0.2s ease;
+
+		&:hover {
+			color: var(--cb-breadcrumb-hover-color, #0073aa);
+		}
+	}
+}
+
+.cb-listing-breadcrumb__sep {
+	color: #ccc;
+}
+
+.cb-listing-breadcrumb__current {
+	color: #333;
+}

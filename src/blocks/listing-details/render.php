@@ -103,17 +103,10 @@ $wrapper = get_block_wrapper_attributes(array(
 	<div class="cb-listing-single__layout">
 
 		<div class="cb-listing-single__left">
-			<nav class="cb-listing-single__breadcrumb" aria-label="<?php esc_attr_e('Breadcrumb', 'cb-listing-anything'); ?>">
-				<a href="<?php echo esc_url(home_url('/')); ?>"><?php esc_html_e('Home', 'cb-listing-anything'); ?></a>
-				<span class="cb-listing-single__breadcrumb-sep">/</span>
-				<a href="<?php echo esc_url(get_post_type_archive_link('cb_listing')); ?>"><?php esc_html_e('Listings', 'cb-listing-anything'); ?></a>
-				<?php if ($categories && ! is_wp_error($categories)) : ?>
-					<span class="cb-listing-single__breadcrumb-sep">/</span>
-					<a href="<?php echo esc_url(get_term_link($categories[0])); ?>"><?php echo esc_html($categories[0]->name); ?></a>
-				<?php endif; ?>
-				<span class="cb-listing-single__breadcrumb-sep">/</span>
-				<span class="cb-listing-single__breadcrumb-current"><?php echo esc_html(get_the_title($post_id)); ?></span>
-			</nav>
+			<?php
+			// Include the shared breadcrumb partial
+			include CB_LISTING_ANYTHING_PLUGIN_DIR . 'src/Views/partials/breadcrumb.php';
+			?>
 
 			<?php if ($show_gallery && ! empty($all_images)) : ?>
 				<div class="cb-listing-single__gallery">
