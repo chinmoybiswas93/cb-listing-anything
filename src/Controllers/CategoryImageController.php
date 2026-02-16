@@ -2,18 +2,22 @@
 
 namespace CBListingAnything\Controllers;
 
+use CBListingAnything\Config\Taxonomies as TaxonomiesConfig;
+use CBListingAnything\Core\AbstractController;
+
 /**
- * Adds category image (term meta) and admin UI for listing_category.
+ * Adds category image (term meta) and admin UI for cb_listing_category.
  */
-class CategoryImageController {
+class CategoryImageController extends AbstractController {
 
 	const META_KEY = 'cb_listing_anything_category_image';
 
 	public function init() {
-		add_action( 'listing_category_add_form_fields', array( $this, 'add_form_fields' ) );
-		add_action( 'listing_category_edit_form_fields', array( $this, 'edit_form_fields' ) );
-		add_action( 'created_listing_category', array( $this, 'save_term_image' ) );
-		add_action( 'edited_listing_category', array( $this, 'save_term_image' ) );
+		$tax = TaxonomiesConfig::CATEGORY_TAXONOMY;
+		add_action( $tax . '_add_form_fields', array( $this, 'add_form_fields' ) );
+		add_action( $tax . '_edit_form_fields', array( $this, 'edit_form_fields' ) );
+		add_action( 'created_' . $tax, array( $this, 'save_term_image' ) );
+		add_action( 'edited_' . $tax, array( $this, 'save_term_image' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_media_script' ) );
 	}
 
@@ -97,7 +101,7 @@ class CategoryImageController {
 			return;
 		}
 		$screen = get_current_screen();
-		if ( ! $screen || $screen->taxonomy !== 'listing_category' ) {
+		if ( ! $screen || $screen->taxonomy !== TaxonomiesConfig::CATEGORY_TAXONOMY ) {
 			return;
 		}
 		wp_enqueue_media();

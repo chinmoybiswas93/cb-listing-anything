@@ -2,7 +2,11 @@
 
 namespace CBListingAnything\Controllers;
 
-class SettingsController {
+use CBListingAnything\Config\PostType as PostTypeConfig;
+use CBListingAnything\Config\Taxonomies as TaxonomiesConfig;
+use CBListingAnything\Core\AbstractController;
+
+class SettingsController extends AbstractController {
 
 	const OPTION_KEY = 'cb_listing_anything_settings';
 	const MENU_SLUG  = 'cb-listing-anything';
@@ -11,12 +15,13 @@ class SettingsController {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_filter( 'parent_file', array( $this, 'fix_taxonomy_parent_menu' ) );
+		add_action( 'update_option_' . self::OPTION_KEY, array( $this, 'maybe_flush_rewrite_rules' ), 10, 3 );
 	}
 
 	public function fix_taxonomy_parent_menu( $parent_file ) {
 		$screen = get_current_screen();
 
-		if ( $screen && 'listing' === $screen->post_type && in_array( $screen->taxonomy, array( 'listing_category', 'listing_tag' ), true ) ) {
+		if ( $screen && PostTypeConfig::POST_TYPE === $screen->post_type && in_array( $screen->taxonomy, array( TaxonomiesConfig::CATEGORY_TAXONOMY, TaxonomiesConfig::TAG_TAXONOMY ), true ) ) {
 			return self::MENU_SLUG;
 		}
 
@@ -39,7 +44,7 @@ class SettingsController {
 			__( 'Categories', 'cb-listing-anything' ),
 			__( 'Categories', 'cb-listing-anything' ),
 			'manage_categories',
-			'edit-tags.php?taxonomy=listing_category&post_type=listing'
+			'edit-tags.php?taxonomy=' . TaxonomiesConfig::CATEGORY_TAXONOMY . '&post_type=' . PostTypeConfig::POST_TYPE
 		);
 
 		add_submenu_page(
@@ -47,7 +52,7 @@ class SettingsController {
 			__( 'Tags', 'cb-listing-anything' ),
 			__( 'Tags', 'cb-listing-anything' ),
 			'manage_categories',
-			'edit-tags.php?taxonomy=listing_tag&post_type=listing'
+			'edit-tags.php?taxonomy=' . TaxonomiesConfig::TAG_TAXONOMY . '&post_type=' . PostTypeConfig::POST_TYPE
 		);
 
 		add_submenu_page(
@@ -81,17 +86,76 @@ class SettingsController {
 			'cb_listing_anything_general',
 			'cb_listing_general_section'
 		);
+
+		add_settings_field(
+			'listing_title',
+			__( 'Listing title', 'cb-listing-anything' ),
+			array( $this, 'render_listing_title_field' ),
+			'cb_listing_anything_general',
+			'cb_listing_general_section'
+		);
+
+		add_settings_field(
+			'listing_slug',
+			__( 'Listing slug', 'cb-listing-anything' ),
+			array( $this, 'render_listing_slug_field' ),
+			'cb_listing_anything_general',
+			'cb_listing_general_section'
+		);
 	}
 
 	public function sanitize_settings( $input ) {
-		$sanitized = self::defaults();
+		$sanitized = get_option( self::OPTION_KEY, self::defaults() );
+		if ( ! is_array( $sanitized ) ) {
+			$sanitized = self::defaults();
+		}
 
 		if ( isset( $input['currency'] ) ) {
 			$valid = array_keys( self::currencies() );
 			$sanitized['currency'] = in_array( $input['currency'], $valid, true ) ? $input['currency'] : 'USD';
 		}
 
+		if ( isset( $input['listing_title'] ) ) {
+			$sanitized['listing_title'] = sanitize_text_field( $input['listing_title'] );
+			if ( $sanitized['listing_title'] === '' ) {
+				$sanitized['listing_title'] = self::defaults()['listing_title'];
+			}
+		}
+
+		if ( isset( $input['listing_slug'] ) ) {
+			$raw_slug = sanitize_text_field( $input['listing_slug'] );
+			$slug     = sanitize_title( $raw_slug, '', 'save' );
+			$slug     = str_replace( ' ', '-', strtolower( $slug ) );
+			$slug     = preg_replace( '/[^a-z0-9_-]/', '', $slug );
+
+			if ( $slug !== '' && self::is_slug_unique( $slug ) ) {
+				$sanitized['listing_slug'] = $slug;
+			} elseif ( $slug !== '' ) {
+				add_settings_error(
+					'cb_listing_anything_general',
+					'listing_slug_duplicate',
+					__( 'This slug is already in use by another post type or is reserved. Please choose a unique slug.', 'cb-listing-anything' ),
+					'error'
+				);
+			}
+		}
+
 		return $sanitized;
+	}
+
+	/**
+	 * Flush rewrite rules when listing_slug changes so archive and taxonomy URLs update.
+	 *
+	 * @param mixed $old_value Old option value.
+	 * @param mixed $value     New option value.
+	 * @param string $option   Option name.
+	 */
+	public function maybe_flush_rewrite_rules( $old_value, $value, $option ) {
+		$old_slug = is_array( $old_value ) && isset( $old_value['listing_slug'] ) ? $old_value['listing_slug'] : '';
+		$new_slug = is_array( $value ) && isset( $value['listing_slug'] ) ? $value['listing_slug'] : '';
+		if ( $old_slug !== $new_slug ) {
+			flush_rewrite_rules();
+		}
 	}
 
 	public function render_currency_field() {
@@ -104,6 +168,32 @@ class SettingsController {
 			<?php endforeach; ?>
 		</select>
 		<p class="description"><?php esc_html_e( 'Select the currency to display with listing prices.', 'cb-listing-anything' ); ?></p>
+		<?php
+	}
+
+	public function render_listing_title_field() {
+		$value = self::get( 'listing_title', self::defaults()['listing_title'] );
+		?>
+		<input type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[listing_title]" id="cb_listing_title" value="<?php echo esc_attr( $value ); ?>" class="regular-text" />
+		<p class="description"><?php esc_html_e( 'Label used in the admin (e.g. "Listing", "Property").', 'cb-listing-anything' ); ?></p>
+		<?php
+	}
+
+	public function render_listing_slug_field() {
+		$value       = self::get( 'listing_slug', self::defaults()['listing_slug'] );
+		$archive_url = home_url( '/' . $value . '/' );
+		?>
+		<input type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[listing_slug]" id="cb_listing_slug" value="<?php echo esc_attr( $value ); ?>" class="regular-text" />
+		<p class="description">
+			<?php esc_html_e( 'URL slug for the listing archive. Must be unique (not used by posts, pages, or other post types). Category and tag archives will use this slug (e.g. slug-category, slug-tag).', 'cb-listing-anything' ); ?>
+		</p>
+		<p class="description">
+			<?php esc_html_e( 'Note: Permalinks need to be flushed manually when you save so the new URL is active (e.g. go to Settings → Permalinks and click Save).', 'cb-listing-anything' ); ?>
+		</p>
+		<p class="description">
+			<?php esc_html_e( 'Archive URL:', 'cb-listing-anything' ); ?>
+			<a href="<?php echo esc_url( $archive_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $archive_url ); ?></a>
+		</p>
 		<?php
 	}
 
@@ -147,6 +237,7 @@ class SettingsController {
 	}
 
 	private function render_tab_general() {
+		settings_errors( 'cb_listing_anything_general' );
 		?>
 		<form method="post" action="options.php">
 			<?php
@@ -183,8 +274,50 @@ class SettingsController {
 
 	public static function defaults() {
 		return array(
-			'currency' => 'USD',
+			'currency'       => 'USD',
+			'listing_title' => __( 'Listing', 'cb-listing-anything' ),
+			'listing_slug'  => 'cb_listing',
 		);
+	}
+
+	/**
+	 * Reserved slugs that cannot be used as the listing archive slug.
+	 *
+	 * @return string[]
+	 */
+	public static function reserved_slugs() {
+		return array(
+			'post', 'page', 'attachment', 'revision', 'nav_menu_item',
+			'custom_css', 'customize_changeset', 'oembed_cache', 'user_request',
+			'wp_block', 'wp_template', 'wp_template_part', 'wp_global_styles', 'wp_navigation',
+		);
+	}
+
+	/**
+	 * Check if a slug is unique (not used by another post type's rewrite).
+	 *
+	 * @param string $slug Proposed slug.
+	 * @return bool True if unique.
+	 */
+	public static function is_slug_unique( $slug ) {
+		$slug = trim( $slug );
+		if ( $slug === '' ) {
+			return false;
+		}
+		$slug_lower = strtolower( $slug );
+		if ( in_array( $slug_lower, self::reserved_slugs(), true ) ) {
+			return false;
+		}
+		foreach ( get_post_types( array(), 'objects' ) as $post_type ) {
+			if ( $post_type->name === PostTypeConfig::POST_TYPE ) {
+				continue;
+			}
+			$rewrite_slug = isset( $post_type->rewrite['slug'] ) ? $post_type->rewrite['slug'] : $post_type->name;
+			if ( $slug_lower === strtolower( $rewrite_slug ) ) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public static function currencies() {

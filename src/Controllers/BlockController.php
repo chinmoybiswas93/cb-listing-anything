@@ -2,8 +2,11 @@
 
 namespace CBListingAnything\Controllers;
 
-class BlockController
-{
+use CBListingAnything\Config\PostType as PostTypeConfig;
+use CBListingAnything\Config\Taxonomies as TaxonomiesConfig;
+use CBListingAnything\Core\AbstractController;
+
+class BlockController extends AbstractController {
 
 	/**
 	 * Initialize block hooks.
@@ -25,7 +28,7 @@ class BlockController
 	 */
 	public function register_blocks()
 	{
-		$blocks = array( 'listings-card', 'listing-details', 'related-listings', 'listing-search', 'categories-slider' );
+		$blocks = array( 'listings-card', 'listing-details', 'related-listings', 'listing-search', 'categories-slider', 'listings-archive' );
 
 		foreach ( $blocks as $block ) {
 			$block_dir = CB_LISTING_ANYTHING_PLUGIN_DIR . 'build/' . $block;
@@ -45,8 +48,8 @@ class BlockController
 	{
 		$script = <<<JS
 		wp.domReady( function() {
-			wp.blocks.unregisterBlockVariation( 'core/post-terms', 'listing_category' );
-			wp.blocks.unregisterBlockVariation( 'core/post-terms', 'listing_tag' );
+			wp.blocks.unregisterBlockVariation( 'core/post-terms', 'cb_listing_category' );
+			wp.blocks.unregisterBlockVariation( 'core/post-terms', 'cb_listing_tag' );
 		} );
 		JS;
 
@@ -73,7 +76,7 @@ class BlockController
 			return $allowed_blocks;
 		}
 
-		if ( isset( $editor_context->post ) && 'listing' === $editor_context->post->post_type ) {
+		if ( isset( $editor_context->post ) && PostTypeConfig::POST_TYPE === $editor_context->post->post_type ) {
 			return $allowed_blocks;
 		}
 
@@ -103,7 +106,7 @@ class BlockController
 	{
 		$terms = get_terms(
 			array(
-				'taxonomy'   => 'listing_category',
+				'taxonomy'   => TaxonomiesConfig::CATEGORY_TAXONOMY,
 				'hide_empty' => false,
 			)
 		);

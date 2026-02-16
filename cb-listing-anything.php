@@ -67,6 +67,16 @@ function cb_listing_anything_init() {
 add_action( 'plugins_loaded', 'cb_listing_anything_init' );
 
 /**
+ * Get the plugin instance.
+ * Call after plugins_loaded (e.g. in templates or other plugins).
+ *
+ * @return \CBListingAnything\Core\Plugin
+ */
+function cb_listing_anything() {
+	return \CBListingAnything\Core\Plugin::instance();
+}
+
+/**
  * Get the category image attachment ID for a listing category term.
  *
  * @param int $term_id Listing category term ID.

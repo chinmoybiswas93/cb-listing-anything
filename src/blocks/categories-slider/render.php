@@ -13,7 +13,7 @@ $selected_category_ids  = isset( $attributes['selectedCategoryIds'] ) && is_arra
 $selected_category_ids  = array_filter( $selected_category_ids );
 
 $get_terms_args = array(
-	'taxonomy'   => 'listing_category',
+	'taxonomy'   => 'cb_listing_category',
 	'hide_empty' => true,
 	'orderby'    => 'name',
 	'order'      => 'ASC',
@@ -65,10 +65,10 @@ $wrapper = get_block_wrapper_attributes( array(
 				}
 				$img_url = '';
 				$q       = new WP_Query( array(
-					'post_type'      => 'listing',
+					'post_type'      => 'cb_listing',
 					'post_status'    => 'publish',
 					'posts_per_page' => 1,
-					'tax_query'      => array( array( 'taxonomy' => 'listing_category', 'field' => 'term_id', 'terms' => $term->term_id ) ),
+					'tax_query'      => array( array( 'taxonomy' => 'cb_listing_category', 'field' => 'term_id', 'terms' => $term->term_id ) ),
 					'fields'         => 'ids',
 				) );
 				if ( $q->have_posts() ) {

@@ -2,30 +2,17 @@
 
 namespace CBListingAnything\Models;
 
-class ListingMeta {
+use CBListingAnything\Config\ListingMeta as ListingMetaConfig;
 
+class ListingMeta extends AbstractModel {
+
+	/**
+	 * Get the list of listing meta field keys (from config).
+	 *
+	 * @return array<string>
+	 */
 	public static function fields() {
-		return array(
-			'listing_price',
-			'listing_location',
-			'listing_address',
-			'listing_city',
-			'listing_state',
-			'listing_zip_code',
-			'listing_country',
-			'listing_contact_email',
-			'listing_contact_phone',
-			'listing_website',
-			'listing_social_facebook',
-			'listing_social_twitter',
-			'listing_social_instagram',
-			'listing_social_linkedin',
-			'listing_social_youtube',
-			'listing_opening_time',
-			'listing_closing_time',
-			'listing_working_days',
-			'listing_gallery',
-		);
+		return ListingMetaConfig::field_keys();
 	}
 
 	public static function key( $field ) {

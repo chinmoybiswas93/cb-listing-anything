@@ -14,7 +14,7 @@ registerBlockType( metadata.name, {
 		const blockProps = useBlockProps();
 
 		const { categories, isLoadingCategories } = useSelect( ( select ) => {
-			const data = select( 'core' ).getEntityRecords( 'taxonomy', 'listing_category', { per_page: -1 } );
+			const data = select( 'core' ).getEntityRecords( 'taxonomy', 'cb_listing_category', { per_page: -1 } );
 			return {
 				categories: Array.isArray( data ) ? data : [],
 				isLoadingCategories: data === undefined,

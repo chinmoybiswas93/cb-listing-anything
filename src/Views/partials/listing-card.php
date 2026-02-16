@@ -10,8 +10,8 @@ $phone        = get_post_meta( $card_post_id, '_listing_contact_phone', true );
 $opening_time = get_post_meta( $card_post_id, '_listing_opening_time', true );
 $closing_time = get_post_meta( $card_post_id, '_listing_closing_time', true );
 $working_days = get_post_meta( $card_post_id, '_listing_working_days', true );
-$categories   = get_the_terms( $card_post_id, 'listing_category' );
-$tags         = get_the_terms( $card_post_id, 'listing_tag' );
+$categories   = get_the_terms( $card_post_id, 'cb_listing_category' );
+$tags         = get_the_terms( $card_post_id, 'cb_listing_tag' );
 
 $is_open = false;
 if ( $opening_time && $closing_time && is_array( $working_days ) ) {

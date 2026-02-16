@@ -1,16 +1,20 @@
 <?php
 
-namespace CBListingAnything\Controllers;
+namespace CBListingAnything\Rest;
 
+use CBListingAnything\Config\PostType as PostTypeConfig;
+use CBListingAnything\Config\Taxonomies as TaxonomiesConfig;
+use CBListingAnything\Controllers\SettingsController;
 use WP_REST_Request;
 use WP_REST_Response;
 
 class SearchController {
 
-	public function init() {
-		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
-	}
-
+	/**
+	 * Register REST routes.
+	 *
+	 * @return void
+	 */
 	public function register_routes() {
 		register_rest_route( 'cb-listing-anything/v1', '/search', array(
 			'methods'             => 'GET',
@@ -29,14 +33,14 @@ class SearchController {
 				),
 			),
 		) );
-
-		register_rest_route( 'cb-listing-anything/v1', '/categories', array(
-			'methods'             => 'GET',
-			'callback'            => array( $this, 'get_categories' ),
-			'permission_callback' => '__return_true',
-		) );
 	}
 
+	/**
+	 * Search listings endpoint callback.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response
+	 */
 	public function search_listings( WP_REST_Request $request ) {
 		$keyword  = $request->get_param( 'keyword' );
 		$category = $request->get_param( 'category' );
@@ -46,7 +50,7 @@ class SearchController {
 		}
 
 		$args = array(
-			'post_type'      => 'listing',
+			'post_type'      => PostTypeConfig::POST_TYPE,
 			'post_status'    => 'publish',
 			'posts_per_page' => 8,
 		);
@@ -58,7 +62,7 @@ class SearchController {
 		if ( ! empty( $category ) ) {
 			$args['tax_query'] = array(
 				array(
-					'taxonomy' => 'listing_category',
+					'taxonomy' => TaxonomiesConfig::CATEGORY_TAXONOMY,
 					'field'    => 'term_id',
 					'terms'    => $category,
 				),
@@ -75,7 +79,7 @@ class SearchController {
 				$thumb_url = get_the_post_thumbnail_url( $post_id, 'thumbnail' );
 				$location  = get_post_meta( $post_id, '_listing_location', true );
 				$price     = get_post_meta( $post_id, '_listing_price', true );
-				$cats      = get_the_terms( $post_id, 'listing_category' );
+				$cats      = get_the_terms( $post_id, TaxonomiesConfig::CATEGORY_TAXONOMY );
 				$cat_name  = '';
 
 				if ( $cats && ! is_wp_error( $cats ) ) {
@@ -96,31 +100,5 @@ class SearchController {
 		}
 
 		return new WP_REST_Response( $results, 200 );
-	}
-
-	public function get_categories( WP_REST_Request $request ) {
-		$terms = get_terms( array(
-			'taxonomy'   => 'listing_category',
-			'hide_empty' => false,
-			'orderby'    => 'name',
-			'order'      => 'ASC',
-		) );
-
-		if ( is_wp_error( $terms ) ) {
-			return new WP_REST_Response( array(), 200 );
-		}
-
-		$flat = array();
-
-		foreach ( $terms as $term ) {
-			$flat[] = array(
-				'id'     => $term->term_id,
-				'name'   => $term->name,
-				'parent' => $term->parent,
-				'count'  => $term->count,
-			);
-		}
-
-		return new WP_REST_Response( $flat, 200 );
 	}
 }

@@ -104,7 +104,7 @@ document.addEventListener( 'DOMContentLoaded', function () {
 			var url      = archiveUrl || '/';
 			var params   = [];
 			if ( keyword ) params.push( 's=' + encodeURIComponent( keyword ) );
-			if ( category ) params.push( 'listing_category=' + encodeURIComponent( category ) );
+			if ( category ) params.push( 'cb_listing_category=' + encodeURIComponent( category ) );
 			if ( params.length ) url += ( url.indexOf( '?' ) !== -1 ? '&' : '?' ) + params.join( '&' );
 			window.location.href = url;
 		}

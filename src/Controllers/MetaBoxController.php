@@ -2,10 +2,12 @@
 
 namespace CBListingAnything\Controllers;
 
+use CBListingAnything\Config\PostType as PostTypeConfig;
+use CBListingAnything\Core\AbstractController;
 use CBListingAnything\Models\ListingMeta;
 use WP_Post;
 
-class MetaBoxController {
+class MetaBoxController extends AbstractController {
 
 	public function init() {
 		add_action( 'add_meta_boxes', array( $this, 'add_meta_boxes' ) );
@@ -18,7 +20,7 @@ class MetaBoxController {
 			return;
 		}
 
-		if ( 'listing' !== get_post_type() ) {
+		if ( PostTypeConfig::POST_TYPE !== get_post_type() ) {
 			return;
 		}
 
@@ -210,7 +212,7 @@ class MetaBoxController {
 			'listing_details',
 			__( 'Listing Details', 'cb-listing-anything' ),
 			array( $this, 'render_listing_details_meta_box' ),
-			'listing',
+			PostTypeConfig::POST_TYPE,
 			'normal',
 			'high'
 		);
@@ -253,7 +255,7 @@ class MetaBoxController {
 			return;
 		}
 
-		if ( 'listing' !== get_post_type( $post_id ) ) {
+		if ( PostTypeConfig::POST_TYPE !== get_post_type( $post_id ) ) {
 			return;
 		}
 

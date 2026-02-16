@@ -87,11 +87,11 @@ You can query listings using standard WordPress WP_Query:
 
 ```php
 $args = array(
-    'post_type' => 'listing',
+    'post_type' => 'cb_listing',
     'posts_per_page' => 10,
     'tax_query' => array(
         array(
-            'taxonomy' => 'listing_category',
+            'taxonomy' => 'cb_listing_category',
             'field'    => 'slug',
             'terms'    => 'your-category-slug',
         ),

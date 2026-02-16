@@ -6,9 +6,10 @@ use CBListingAnything\Controllers\BlockController;
 use CBListingAnything\Controllers\CategoryImageController;
 use CBListingAnything\Controllers\MetaBoxController;
 use CBListingAnything\Controllers\PostTypeController;
-use CBListingAnything\Controllers\SearchController;
 use CBListingAnything\Controllers\SettingsController;
 use CBListingAnything\Controllers\TaxonomyController;
+use CBListingAnything\Rest\SearchController as RestSearchController;
+use CBListingAnything\Rest\TermController as RestTermController;
 
 class Plugin {
 
@@ -48,14 +49,19 @@ class Plugin {
 	private $block_controller;
 
 	/**
-	 * @var SearchController
-	 */
-	private $search_controller;
-
-	/**
 	 * @var SettingsController
 	 */
 	private $settings_controller;
+
+	/**
+	 * @var RestSearchController
+	 */
+	private $rest_search_controller;
+
+	/**
+	 * @var RestTermController
+	 */
+	private $rest_term_controller;
 
 	/**
 	 * @var CategoryImageController
@@ -83,9 +89,10 @@ class Plugin {
 		$this->taxonomy_controller       = new TaxonomyController();
 		$this->meta_box_controller       = new MetaBoxController();
 		$this->block_controller          = new BlockController();
-		$this->search_controller         = new SearchController();
 		$this->settings_controller       = new SettingsController();
 		$this->category_image_controller = new CategoryImageController();
+		$this->rest_search_controller    = new RestSearchController();
+		$this->rest_term_controller      = new RestTermController();
 	}
 
 	/**
@@ -100,9 +107,10 @@ class Plugin {
 
 		$this->meta_box_controller->init();
 		$this->block_controller->init();
-		$this->search_controller->init();
 		$this->settings_controller->init();
 		$this->category_image_controller->init();
+		add_action( 'rest_api_init', array( $this->rest_search_controller, 'register_routes' ) );
+		add_action( 'rest_api_init', array( $this->rest_term_controller, 'register_routes' ) );
 	}
 
 	/**
@@ -122,5 +130,59 @@ class Plugin {
 	public function register_content_types() {
 		$this->post_type_controller->register();
 		$this->taxonomy_controller->register();
+	}
+
+	/**
+	 * Get the post type controller.
+	 *
+	 * @return PostTypeController
+	 */
+	public function get_post_type_controller() {
+		return $this->post_type_controller;
+	}
+
+	/**
+	 * Get the taxonomy controller.
+	 *
+	 * @return TaxonomyController
+	 */
+	public function get_taxonomy_controller() {
+		return $this->taxonomy_controller;
+	}
+
+	/**
+	 * Get the meta box controller.
+	 *
+	 * @return MetaBoxController
+	 */
+	public function get_meta_box_controller() {
+		return $this->meta_box_controller;
+	}
+
+	/**
+	 * Get the block controller.
+	 *
+	 * @return BlockController
+	 */
+	public function get_block_controller() {
+		return $this->block_controller;
+	}
+
+	/**
+	 * Get the settings controller.
+	 *
+	 * @return SettingsController
+	 */
+	public function get_settings_controller() {
+		return $this->settings_controller;
+	}
+
+	/**
+	 * Get the category image controller.
+	 *
+	 * @return CategoryImageController
+	 */
+	public function get_category_image_controller() {
+		return $this->category_image_controller;
 	}
 }

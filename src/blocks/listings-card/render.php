@@ -17,20 +17,20 @@ $show_call_button  = isset( $attributes['showCallButton'] ) ? $attributes['showC
 if ( $use_current_query && ! ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) {
 	global $wp_query;
 	$args  = array_merge( $wp_query->query_vars, array(
-		'post_type'      => 'listing',
+		'post_type'      => 'cb_listing',
 		'posts_per_page' => $per_page,
 		'post_status'    => 'publish',
 	) );
 	$query = new WP_Query( $args );
 } else {
 	$args = array(
-		'post_type'      => 'listing',
+		'post_type'      => 'cb_listing',
 		'posts_per_page' => $per_page,
 		'post_status'    => 'publish',
 	);
 	if ( ! $use_current_query && $category_filter > 0 ) {
 		$args['tax_query'] = array( array(
-			'taxonomy' => 'listing_category',
+			'taxonomy' => 'cb_listing_category',
 			'field'    => 'term_id',
 			'terms'    => $category_filter,
 		) );

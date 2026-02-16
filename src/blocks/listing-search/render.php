@@ -5,11 +5,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $placeholder = isset( $attributes['placeholder'] ) ? $attributes['placeholder'] : __( 'Keywords', 'cb-listing-anything' );
 $button_text = isset( $attributes['buttonText'] ) ? $attributes['buttonText'] : __( 'Search', 'cb-listing-anything' );
-$archive_url = get_post_type_archive_link( 'listing' );
+$archive_url = get_post_type_archive_link( 'cb_listing' );
 $wrapper     = get_block_wrapper_attributes( array( 'class' => 'cb-listing-search' ) );
 
 $terms = get_terms( array(
-	'taxonomy'   => 'listing_category',
+	'taxonomy'   => 'cb_listing_category',
 	'hide_empty' => false,
 	'orderby'    => 'name',
 	'order'      => 'ASC',

@@ -5,10 +5,10 @@ if (! defined('ABSPATH')) {
 
 $post_id = isset($block->context['postId']) ? absint($block->context['postId']) : get_the_ID();
 
-if (! $post_id || 'listing' !== get_post_type($post_id)) {
+if (! $post_id || 'cb_listing' !== get_post_type($post_id)) {
 	if (defined('REST_REQUEST') && REST_REQUEST) {
 		$preview = get_posts(array(
-			'post_type'      => 'listing',
+			'post_type'      => 'cb_listing',
 			'posts_per_page' => 1,
 			'post_status'    => 'publish',
 		));
@@ -86,8 +86,8 @@ if ($opening_time && $closing_time && is_array($working_days)) {
 	}
 }
 
-$categories = get_the_terms($post_id, 'listing_category');
-$tags       = get_the_terms($post_id, 'listing_tag');
+$categories = get_the_terms($post_id, 'cb_listing_category');
+$tags       = get_the_terms($post_id, 'cb_listing_tag');
 
 $has_socials = $facebook || $twitter || $instagram || $linkedin || $youtube;
 
@@ -106,7 +106,7 @@ $wrapper = get_block_wrapper_attributes(array(
 			<nav class="cb-listing-single__breadcrumb" aria-label="<?php esc_attr_e('Breadcrumb', 'cb-listing-anything'); ?>">
 				<a href="<?php echo esc_url(home_url('/')); ?>"><?php esc_html_e('Home', 'cb-listing-anything'); ?></a>
 				<span class="cb-listing-single__breadcrumb-sep">/</span>
-				<a href="<?php echo esc_url(get_post_type_archive_link('listing')); ?>"><?php esc_html_e('Listings', 'cb-listing-anything'); ?></a>
+				<a href="<?php echo esc_url(get_post_type_archive_link('cb_listing')); ?>"><?php esc_html_e('Listings', 'cb-listing-anything'); ?></a>
 				<?php if ($categories && ! is_wp_error($categories)) : ?>
 					<span class="cb-listing-single__breadcrumb-sep">/</span>
 					<a href="<?php echo esc_url(get_term_link($categories[0])); ?>"><?php echo esc_html($categories[0]->name); ?></a>
