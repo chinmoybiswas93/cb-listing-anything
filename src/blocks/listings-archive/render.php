@@ -232,11 +232,16 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => 'cb-listings-archive'
 		<aside class="cb-listings-archive__filters">
 			<div class="cb-listings-archive__filters-header">
 				<h3 class="cb-listings-archive__filters-title"><?php esc_html_e( 'Filters', 'cb-listing-anything' ); ?></h3>
-				<?php if ( ! empty( $filter_tag ) || $price_min > 0 || $price_max > 0 ) : ?>
-					<a href="#" class="cb-listings-archive__clear-filters"><?php esc_html_e( 'Clear', 'cb-listing-anything' ); ?></a>
-				<?php else : ?>
-					<a href="#" class="cb-listings-archive__clear-filters" style="display: none;"><?php esc_html_e( 'Clear', 'cb-listing-anything' ); ?></a>
-				<?php endif; ?>
+				<div class="cb-listings-archive__filters-header-right">
+					<?php if ( ! empty( $filter_tag ) || $price_min > 0 || $price_max > 0 ) : ?>
+						<a href="#" class="cb-listings-archive__clear-filters"><?php esc_html_e( 'Clear', 'cb-listing-anything' ); ?></a>
+					<?php else : ?>
+						<a href="#" class="cb-listings-archive__clear-filters" style="display: none;"><?php esc_html_e( 'Clear', 'cb-listing-anything' ); ?></a>
+					<?php endif; ?>
+					<button type="button" class="cb-listings-archive__filters-toggle" aria-expanded="false" aria-label="<?php esc_attr_e( 'Toggle filters', 'cb-listing-anything' ); ?>">
+						<span class="cb-listings-archive__filters-toggle-icon">▼</span>
+					</button>
+				</div>
 			</div>
 			<form method="get" action="<?php echo esc_url( $form_action ); ?>" class="cb-listings-archive__filters-form">
 				<?php if ( ! empty( $attrs['showFilterTag'] ) ) :

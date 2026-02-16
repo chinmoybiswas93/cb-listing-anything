@@ -11,6 +11,9 @@ document.addEventListener( 'DOMContentLoaded', function () {
 		var checkboxes     = block.querySelectorAll( '.cb-listings-archive__filter-label input[type="checkbox"]' );
 		var sortSelect      = block.querySelector( '.cb-listings-archive__sort-select' );
 		var clearLink       = block.querySelector( '.cb-listings-archive__clear-filters' );
+		var filtersToggle   = block.querySelector( '.cb-listings-archive__filters-toggle' );
+		var filtersAside    = block.querySelector( '.cb-listings-archive__filters' );
+		var filtersForm     = block.querySelector( '.cb-listings-archive__filters-form' );
 		var isLoading       = false;
 		var debounceTimer   = null;
 
@@ -154,6 +157,12 @@ document.addEventListener( 'DOMContentLoaded', function () {
 						// No need to re-attach listeners - event delegation handles it
 					} else if ( ! newPagination && paginationNav ) {
 						paginationNav.innerHTML = '';
+					}
+
+					// Preserve filter toggle state after AJAX update
+					if ( filtersToggle && filtersAside ) {
+						var wasExpanded = filtersToggle.getAttribute( 'aria-expanded' ) === 'true';
+						// State is preserved via data attribute, no need to update
 					}
 
 					// Update URL without reload FIRST (before syncing states)
@@ -366,6 +375,17 @@ document.addEventListener( 'DOMContentLoaded', function () {
 		if ( sortForm ) {
 			sortForm.addEventListener( 'submit', function ( e ) {
 				e.preventDefault();
+			} );
+		}
+
+		// Handle mobile filter toggle (accordion)
+		if ( filtersToggle && filtersForm ) {
+			filtersToggle.addEventListener( 'click', function () {
+				var isExpanded = filtersToggle.getAttribute( 'aria-expanded' ) === 'true';
+				filtersToggle.setAttribute( 'aria-expanded', ! isExpanded );
+				if ( filtersAside ) {
+					filtersAside.setAttribute( 'data-expanded', ! isExpanded );
+				}
 			} );
 		}
 
