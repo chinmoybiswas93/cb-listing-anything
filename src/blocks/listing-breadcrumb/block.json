@@ -1,0 +1,62 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "cb-listing-anything/listing-breadcrumb",
+	"title": "CB Listing Breadcrumb",
+	"category": "widgets",
+	"icon": "arrow-right-alt",
+	"description": "Display breadcrumb navigation for listing pages.",
+	"keywords": [ "breadcrumb", "navigation", "listing" ],
+	"textdomain": "cb-listing-anything",
+	"usesContext": [ "postId", "postType" ],
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"supports": {
+		"html": false,
+		"align": [ "wide", "full" ],
+		"typography": {
+			"fontSize": true,
+			"fontWeight": true
+		},
+		"spacing": {
+			"margin": true,
+			"padding": true
+		},
+		"color": {
+			"text": true,
+			"link": true
+		}
+	},
+	"attributes": {
+		"textAlign": {
+			"type": "string",
+			"default": "left"
+		},
+		"textColor": {
+			"type": "string"
+		},
+		"hoverColor": {
+			"type": "string",
+			"default": "#0073aa"
+		},
+		"currentColor": {
+			"type": "string"
+		},
+		"fontSize": {
+			"type": "string"
+		},
+		"fontWeight": {
+			"type": "string"
+		},
+		"spacing": {
+			"type": "object",
+			"default": {
+				"margin": {
+					"bottom": "1rem"
+				}
+			}
+		}
+	},
+	"render": "file:./render.php"
+}

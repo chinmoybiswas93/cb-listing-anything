@@ -1,0 +1,32 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "cb-listing-anything/listings-archive",
+	"title": "Listings Archive",
+	"category": "widgets",
+	"icon": "archive",
+	"description": "Archive with left filter sidebar, listing cards grid, item count, sort options, and pagination.",
+	"keywords": ["listings", "archive", "filter", "pagination"],
+	"textdomain": "cb-listing-anything",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"viewScript": "file:./view.js",
+	"style": "file:./style-index.css",
+	"attributes": {
+		"align": { "type": "string", "default": "wide" },
+		"showFilterCategory": { "type": "boolean", "default": true },
+		"showFilterTag": { "type": "boolean", "default": true },
+		"showFilterPrice": { "type": "boolean", "default": true },
+		"postsPerPage": { "type": "number", "default": 12 },
+		"columns": { "type": "number", "default": 3 },
+		"orderBy": { "type": "string", "default": "date" },
+		"showCategories": { "type": "boolean", "default": true },
+		"showOpenStatus": { "type": "boolean", "default": true },
+		"showPrice": { "type": "boolean", "default": true },
+		"showTags": { "type": "boolean", "default": true },
+		"showAddress": { "type": "boolean", "default": true },
+		"showCallButton": { "type": "boolean", "default": true }
+	},
+	"supports": { "html": false, "align": ["wide", "full"] },
+	"render": "file:./render.php"
+}

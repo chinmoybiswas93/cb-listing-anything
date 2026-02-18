@@ -1,0 +1,67 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "cb-listing-anything/listing-details",
+	"title": "Listing Details",
+	"category": "widgets",
+	"icon": "info-outline",
+	"description": "Display a full single listing view with gallery, content, contact info, and meta data.",
+	"keywords": [ "listing", "details", "meta", "info", "single" ],
+	"textdomain": "cb-listing-anything",
+	"usesContext": [ "postId", "postType" ],
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"viewScript": "file:./view.js",
+	"attributes": {
+		"showGallery": {
+			"type": "boolean",
+			"default": true
+		},
+		"showCategories": {
+			"type": "boolean",
+			"default": true
+		},
+		"showTags": {
+			"type": "boolean",
+			"default": true
+		},
+		"showContent": {
+			"type": "boolean",
+			"default": true
+		},
+		"showCallButton": {
+			"type": "boolean",
+			"default": true
+		},
+		"showAddress": {
+			"type": "boolean",
+			"default": true
+		},
+		"showContact": {
+			"type": "boolean",
+			"default": true
+		},
+		"showWebsite": {
+			"type": "boolean",
+			"default": true
+		},
+		"showSocials": {
+			"type": "boolean",
+			"default": true
+		},
+		"showHours": {
+			"type": "boolean",
+			"default": true
+		},
+		"showPrice": {
+			"type": "boolean",
+			"default": true
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": [ "wide", "full" ]
+	},
+	"render": "file:./render.php"
+}

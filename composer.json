@@ -1,0 +1,10 @@
+{
+    "name": "cb-listing-anything/cb-listing-anything",
+    "description": "CB Listing Anything WordPress plugin",
+    "type": "wordpress-plugin",
+    "autoload": {
+        "psr-4": {
+            "CBListingAnything\\": "src/"
+        }
+    }
+}

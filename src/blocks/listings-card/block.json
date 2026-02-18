@@ -1,0 +1,65 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "cb-listing-anything/listings-card",
+	"title": "Listings Card",
+	"category": "widgets",
+	"icon": "list-view",
+	"description": "Display listings in a card grid layout with image, categories, open status, tags, and action buttons.",
+	"keywords": [ "listings", "cards", "grid", "items" ],
+	"textdomain": "cb-listing-anything",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"attributes": {
+		"align": {
+			"type": "string",
+			"default": "wide"
+		},
+		"useCurrentQuery": {
+			"type": "boolean",
+			"default": false
+		},
+		"postsPerPage": {
+			"type": "number",
+			"default": 6
+		},
+		"columns": {
+			"type": "number",
+			"default": 3
+		},
+		"category": {
+			"type": "number",
+			"default": 0
+		},
+		"showCategories": {
+			"type": "boolean",
+			"default": true
+		},
+		"showOpenStatus": {
+			"type": "boolean",
+			"default": true
+		},
+		"showPrice": {
+			"type": "boolean",
+			"default": true
+		},
+		"showTags": {
+			"type": "boolean",
+			"default": true
+		},
+		"showAddress": {
+			"type": "boolean",
+			"default": true
+		},
+		"showCallButton": {
+			"type": "boolean",
+			"default": true
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": [ "wide", "full" ]
+	},
+	"render": "file:./render.php"
+}

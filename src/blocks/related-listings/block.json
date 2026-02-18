@@ -1,0 +1,58 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "cb-listing-anything/related-listings",
+	"title": "CB Related Listings",
+	"category": "widgets",
+	"icon": "networking",
+	"description": "Display related listings from the same category or tags.",
+	"keywords": [ "related", "listings", "similar", "category" ],
+	"textdomain": "cb-listing-anything",
+	"usesContext": [ "postId", "postType" ],
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"attributes": {
+		"align": {
+			"type": "string",
+			"default": "wide"
+		},
+		"postsPerPage": {
+			"type": "number",
+			"default": 3
+		},
+		"columns": {
+			"type": "number",
+			"default": 3
+		},
+		"showCategories": {
+			"type": "boolean",
+			"default": true
+		},
+		"showOpenStatus": {
+			"type": "boolean",
+			"default": true
+		},
+		"showPrice": {
+			"type": "boolean",
+			"default": true
+		},
+		"showTags": {
+			"type": "boolean",
+			"default": true
+		},
+		"showAddress": {
+			"type": "boolean",
+			"default": true
+		},
+		"showCallButton": {
+			"type": "boolean",
+			"default": true
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": [ "wide", "full" ]
+	},
+	"render": "file:./render.php"
+}
