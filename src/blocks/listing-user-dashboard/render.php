@@ -121,17 +121,19 @@ $base_url = remove_query_arg(
 );
 
 // Initialise form state.
-$errors           = array();
-$success_message  = '';
-$form_title       = '';
-$form_content     = '';
-$form_category_id = 0;
-$form_tag_ids     = array();
-$form_tags_other  = '';
+$errors            = array();
+$success_message   = '';
+$form_title        = '';
+$form_content      = '';
+$form_category_id  = 0;
+$form_tag_ids      = array();
+$form_tags_other   = '';
+$form_featured_id  = 0;
+$form_price        = '';
 
 // Meta fields mirror the admin meta box configuration.
-$meta_field_keys = ListingMeta::fields();
-$form_meta       = array();
+$meta_field_keys  = ListingMeta::fields();
+$form_meta        = array();
 
 foreach ( $meta_field_keys as $field_key ) {
 	if ( ListingMeta::is_array_field( $field_key ) ) {
@@ -208,6 +210,7 @@ if ( 'add' === $tab && 'POST' === $_SERVER['REQUEST_METHOD'] && ! ( defined( 'RE
 			$form_category_id = isset( $_POST['cb_listing_category'] ) ? absint( $_POST['cb_listing_category'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			$form_tag_ids     = isset( $_POST['cb_listing_tags'] ) && is_array( $_POST['cb_listing_tags'] ) ? array_map( 'absint', wp_unslash( $_POST['cb_listing_tags'] ) ) : array(); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			$form_tags_other  = isset( $_POST['cb_listing_tags_other'] ) ? sanitize_text_field( wp_unslash( $_POST['cb_listing_tags_other'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$form_featured_id = isset( $_POST['cb_listing_featured_image_id'] ) ? absint( wp_unslash( $_POST['cb_listing_featured_image_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 			// Populate meta values from request.
 			foreach ( $meta_field_keys as $field_key ) {
@@ -343,6 +346,13 @@ if ( 'add' === $tab && 'POST' === $_SERVER['REQUEST_METHOD'] && ! ( defined( 'RE
 					}
 				}
 
+				// Sync featured image.
+				if ( $form_featured_id ) {
+					set_post_thumbnail( $post_id, $form_featured_id );
+				} else {
+					delete_post_thumbnail( $post_id );
+				}
+
 				if ( 'edit_listing' === $dashboard_action ) {
 					$success_message = __( 'Listing updated.', 'cb-listing-anything' );
 				} else {
@@ -352,6 +362,7 @@ if ( 'add' === $tab && 'POST' === $_SERVER['REQUEST_METHOD'] && ! ( defined( 'RE
 					$form_category_id = 0;
 					$form_tag_ids     = array();
 					$form_tags_other  = '';
+					$form_featured_id = 0;
 
 					foreach ( $meta_field_keys as $field_key ) {
 						if ( ListingMeta::is_array_field( $field_key ) ) {
@@ -371,8 +382,9 @@ if ( $editing_post_id && 'add' === $tab && 'POST' !== $_SERVER['REQUEST_METHOD']
 	$existing_post = get_post( $editing_post_id );
 
 	if ( $existing_post && 'cb_listing' === $existing_post->post_type ) {
-		$form_title   = $existing_post->post_title;
-		$form_content = $existing_post->post_content;
+		$form_title       = $existing_post->post_title;
+		$form_content     = $existing_post->post_content;
+		$form_featured_id = (int) get_post_thumbnail_id( $existing_post );
 
 		$existing_categories = wp_get_object_terms(
 			$editing_post_id,
@@ -536,9 +548,10 @@ if ( 'add' === $tab ) {
 						wp_enqueue_media();
 					}
 
-					$gallery_title  = esc_js( __( 'Select Gallery Images', 'cb-listing-anything' ) );
-					$gallery_button = esc_js( __( 'Add to Gallery', 'cb-listing-anything' ) );
-					$remove_label   = esc_js( __( 'Remove', 'cb-listing-anything' ) );
+					$gallery_title           = esc_js( __( 'Select Gallery Images', 'cb-listing-anything' ) );
+					$gallery_button          = esc_js( __( 'Add to Gallery', 'cb-listing-anything' ) );
+					$remove_label            = esc_js( __( 'Remove', 'cb-listing-anything' ) );
+					$featured_remove_label   = esc_js( __( 'Remove featured image', 'cb-listing-anything' ) );
 
 					$gallery_js = <<<JS
 ;(function($) {
@@ -631,6 +644,302 @@ if ( 'add' === $tab ) {
 
 		attachTimePickerHandler( '#cb-listing-opening-time' );
 		attachTimePickerHandler( '#cb-listing-closing-time' );
+
+		var featuredButton = $('#cb-listing-dashboard-featured-add');
+		var featuredInput  = $('#cb-listing-dashboard-featured-id');
+		var featuredPrev   = $('#cb-listing-dashboard-featured-preview');
+
+		if ( featuredButton['length'] ) {
+			featuredButton['on']('click', function(e) {
+				e['preventDefault']();
+
+				var frame = wp['media']({
+					title: '{$gallery_title}',
+					button: { text: '{$gallery_button}' },
+					multiple: false
+				});
+
+				frame['on']('select', function() {
+					var selection = frame['state']()['get']('selection');
+					var attachment = selection['first']();
+
+					if ( ! attachment ) {
+						return;
+					}
+
+					var data = attachment['toJSON']();
+					var thumb = data['sizes'] && data['sizes']['medium'] ? data['sizes']['medium']['url'] : data['url'];
+
+					featuredPrev['empty']()['append'](
+						'<div class="cb-listing-user-dashboard__gallery-item">' +
+							'<img src="' + thumb + '" alt="" />' +
+							'<button type="button" class="cb-listing-user-dashboard__gallery-remove cb-listing-user-dashboard__featured-remove" id="cb-listing-dashboard-featured-remove" aria-label="{$featured_remove_label}">&times;</button>' +
+						'</div>'
+					);
+
+					featuredInput['val']( data['id'] );
+				});
+
+				frame['open']();
+			});
+		}
+
+		featuredPrev['on']('click', '#cb-listing-dashboard-featured-remove', function(e) {
+			e['preventDefault']();
+			featuredPrev['empty']();
+			featuredInput['val']('');
+		});
+
+		var tagsRoot       = $('#cb-listing-dashboard-tags');
+		var tagsChips      = $('#cb-listing-dashboard-tags-chips');
+		var tagsInput      = $('#cb-listing-dashboard-tags-input');
+		var tagsSuggestionsWrap = $('#cb-listing-dashboard-tags-suggestions');
+		var tagsHidden     = $('#cb-listing-dashboard-tags-hidden');
+		var tagsOtherInput = $('#cb-listing-dashboard-tags-other');
+
+		if ( tagsRoot['length'] ) {
+			var suggestionsRaw = tagsRoot['attr']('data-tag-suggestions') || '[]';
+			var tagSuggestions = [];
+
+			try {
+				tagSuggestions = JSON['parse']( suggestionsRaw );
+			} catch (err) {
+				tagSuggestions = [];
+			}
+
+			var selectedExisting = {};
+			var selectedCustom = [];
+
+			tagsHidden['find']("input[name='cb_listing_tags[]']")['each'](function() {
+				var id = parseInt( $(this)['val'](), 10 );
+
+				if ( id ) {
+					selectedExisting[ id ] = true;
+				}
+			});
+
+			var initialCustom = tagsOtherInput['val']();
+
+			if ( initialCustom ) {
+				initialCustom['split'](',')['forEach'](function(name) {
+					var trimmed = name['trim']();
+
+					if ( trimmed ) {
+						selectedCustom['push']( trimmed );
+					}
+				});
+			}
+
+			function findSuggestionById( id ) {
+				for ( var i = 0; i < tagSuggestions['length']; i++ ) {
+					if ( parseInt( tagSuggestions[i]['id'], 10 ) === id ) {
+						return tagSuggestions[i];
+					}
+				}
+				return null;
+			}
+
+			function renderHiddenInputs() {
+				tagsHidden['find']("input[name='cb_listing_tags[]']")['remove']();
+
+				Object['keys']( selectedExisting )['forEach'](function(idStr) {
+					if ( selectedExisting[ idStr ] ) {
+						var hidden = $('<input>', {
+							type: 'hidden',
+							name: 'cb_listing_tags[]',
+							value: idStr
+						});
+						tagsHidden['append']( hidden );
+					}
+				});
+
+				tagsOtherInput['val']( selectedCustom['join'](', ') );
+			}
+
+			function renderChips() {
+				tagsChips['empty']();
+
+				Object['keys']( selectedExisting )['forEach'](function(idStr) {
+					if ( ! selectedExisting[ idStr ] ) {
+						return;
+					}
+
+					var id = parseInt( idStr, 10 );
+					var suggestion = findSuggestionById( id );
+
+					if ( ! suggestion ) {
+						return;
+					}
+
+					var chip = $('<span>', {
+						'class': 'cb-listing-user-dashboard__tag-chip',
+						'data-tag-id': idStr
+					});
+
+					chip['append'](
+						$('<span>')['text']( suggestion['name'] )
+					);
+
+					chip['append'](
+						$('<button>', {
+							type: 'button',
+							class: 'cb-listing-user-dashboard__tag-chip-remove',
+							text: '×'
+						})
+					);
+
+					tagsChips['append']( chip );
+				});
+
+				selectedCustom['forEach'](function(name) {
+					var chip = $('<span>', {
+						'class': 'cb-listing-user-dashboard__tag-chip',
+						'data-tag-name': name
+					});
+
+					chip['append'](
+						$('<span>')['text']( name )
+					);
+
+					chip['append'](
+						$('<button>', {
+							type: 'button',
+							class: 'cb-listing-user-dashboard__tag-chip-remove',
+							text: '×'
+						})
+					);
+
+					tagsChips['append']( chip );
+				});
+			}
+
+			function addExistingTagById( id ) {
+				if ( ! id ) {
+					return;
+				}
+
+				var key = String( id );
+
+				if ( selectedExisting[ key ] ) {
+					return;
+				}
+
+				var suggestion = findSuggestionById( id );
+
+				if ( ! suggestion ) {
+					return;
+				}
+
+				selectedExisting[ key ] = true;
+				renderChips();
+				renderHiddenInputs();
+			}
+
+			function addCustomTag( name ) {
+				var trimmed = name['trim']();
+
+				if ( ! trimmed ) {
+					return;
+				}
+
+				for ( var i = 0; i < tagSuggestions['length']; i++ ) {
+					if ( tagSuggestions[i]['name']['toLowerCase']() === trimmed['toLowerCase']() ) {
+						addExistingTagById( parseInt( tagSuggestions[i]['id'], 10 ) );
+						return;
+					}
+				}
+
+				if ( selectedCustom['some'](function(existing) { return existing['toLowerCase']() === trimmed['toLowerCase'](); }) ) {
+					return;
+				}
+
+				selectedCustom['push']( trimmed );
+				renderChips();
+				renderHiddenInputs();
+			}
+
+			function updateSuggestions( query ) {
+				tagsSuggestionsWrap['empty']();
+
+				var q = query['trim']()['toLowerCase']();
+
+				if ( ! q ) {
+					return;
+				}
+
+				var list = $('<div>', {
+					'class': 'cb-listing-user-dashboard__tags-suggestions-list'
+				});
+
+				var matches = [];
+
+				tagSuggestions['forEach'](function(suggestion) {
+					var name = suggestion['name'] || '';
+					if ( name['toLowerCase']()['indexOf']( q ) !== -1 && ! selectedExisting[ String( suggestion['id'] ) ] ) {
+						matches['push']( suggestion );
+					}
+				});
+
+				if ( ! matches['length'] ) {
+					return;
+				}
+
+				matches['slice'](0, 8)['forEach'](function(suggestion) {
+					var item = $('<div>', {
+						'class': 'cb-listing-user-dashboard__tags-suggestion',
+						'data-tag-id': suggestion['id']
+					});
+
+					item['text']( suggestion['name'] );
+					list['append']( item );
+				});
+
+				tagsSuggestionsWrap['append']( list );
+			}
+
+			tagsInput['on']('input', function() {
+				updateSuggestions( tagsInput['val']() );
+			});
+
+			tagsInput['on']('keydown', function(e) {
+				var key = e['which'] || e['keyCode'];
+
+				if ( key === 13 || key === 188 ) {
+					e['preventDefault']();
+					var value = tagsInput['val']() || '';
+					addCustomTag( value );
+					tagsInput['val']('');
+					tagsSuggestionsWrap['empty']();
+				}
+			});
+
+			tagsSuggestionsWrap['on']('click', '.cb-listing-user-dashboard__tags-suggestion', function() {
+				var id = parseInt( $(this)['data']('tag-id'), 10 );
+				addExistingTagById( id );
+				tagsInput['val']('');
+				tagsSuggestionsWrap['empty']();
+			});
+
+			tagsChips['on']('click', '.cb-listing-user-dashboard__tag-chip-remove', function() {
+				var chip = $(this)['closest']('.cb-listing-user-dashboard__tag-chip');
+				var id = chip['data']('tag-id');
+				var name = chip['data']('tag-name');
+
+				if ( id ) {
+					delete selectedExisting[ String( id ) ];
+				} else if ( name ) {
+					selectedCustom = selectedCustom['filter'](function(existing) {
+						return existing !== name;
+					});
+				}
+
+				renderChips();
+				renderHiddenInputs();
+			});
+
+			renderChips();
+			renderHiddenInputs();
+		}
 	});
 })(jQuery);
 JS;
@@ -694,43 +1003,85 @@ JS;
 						</div>
 
 						<?php if ( ! empty( $tags ) ) : ?>
+							<?php
+							$tag_suggestions = array();
+
+							foreach ( $tags as $tag ) {
+								$tag_suggestions[] = array(
+									'id'   => (int) $tag->term_id,
+									'name' => $tag->name,
+								);
+							}
+
+							$tag_suggestions_json = wp_json_encode( $tag_suggestions );
+							?>
 							<div class="cb-listing-user-dashboard__field">
 								<span class="cb-listing-user-dashboard__label">
 									<?php esc_html_e( 'Tags', 'cb-listing-anything' ); ?>
 								</span>
-								<div class="cb-listing-user-dashboard__tags">
-									<?php foreach ( $tags as $tag ) : ?>
-										<label class="cb-listing-user-dashboard__tag">
-											<input
-												type="checkbox"
-												name="cb_listing_tags[]"
-												value="<?php echo esc_attr( $tag->term_id ); ?>"
-												<?php checked( in_array( $tag->term_id, $form_tag_ids, true ), true ); ?>
-											/>
-											<span><?php echo esc_html( $tag->name ); ?></span>
-										</label>
+								<div
+									class="cb-listing-user-dashboard__tags-select"
+									id="cb-listing-dashboard-tags"
+									data-tag-suggestions="<?php echo esc_attr( $tag_suggestions_json ); ?>"
+								>
+									<div class="cb-listing-user-dashboard__tags-chips" id="cb-listing-dashboard-tags-chips"></div>
+									<input
+										type="text"
+										id="cb-listing-dashboard-tags-input"
+										class="cb-listing-user-dashboard__tags-input"
+										placeholder="<?php esc_attr_e( 'Type to add tags', 'cb-listing-anything' ); ?>"
+										autocomplete="off"
+									/>
+									<div class="cb-listing-user-dashboard__tags-suggestions" id="cb-listing-dashboard-tags-suggestions"></div>
+								</div>
+								<div class="cb-listing-user-dashboard__tags-hidden" id="cb-listing-dashboard-tags-hidden">
+									<?php foreach ( $form_tag_ids as $tag_id ) : ?>
+										<input type="hidden" name="cb_listing_tags[]" value="<?php echo esc_attr( $tag_id ); ?>" />
 									<?php endforeach; ?>
-									<label class="cb-listing-user-dashboard__tag cb-listing-user-dashboard__tag--other">
-										<span class="cb-listing-user-dashboard__tag-other-main">
-											<input
-												type="checkbox"
-												name="cb_listing_tags_other_toggle"
-												value="1"
-												class="cb-listing-user-dashboard__tags-other-toggle"
-											/>
-											<span><?php esc_html_e( 'Other', 'cb-listing-anything' ); ?></span>
-										</span>
-										<input
-											type="text"
-											name="cb_listing_tags_other"
-											class="cb-listing-user-dashboard__tags-other-input"
-											placeholder="<?php esc_attr_e( 'Custom tags, comma separated', 'cb-listing-anything' ); ?>"
-											value="<?php echo esc_attr( $form_tags_other ); ?>"
-										/>
-									</label>
+									<input type="hidden" name="cb_listing_tags_other" id="cb-listing-dashboard-tags-other" value="<?php echo esc_attr( $form_tags_other ); ?>" />
 								</div>
 							</div>
 						<?php endif; ?>
+
+						<div class="cb-listing-user-dashboard__group">
+							<h4 class="cb-listing-user-dashboard__group-title">
+								<?php esc_html_e( 'Featured image', 'cb-listing-anything' ); ?>
+							</h4>
+							<div class="cb-listing-user-dashboard__group-grid">
+								<div class="cb-listing-user-dashboard__field cb-listing-user-dashboard__field--full">
+									<div class="cb-listing-user-dashboard__featured">
+										<?php
+										$featured_src = '';
+
+										if ( $form_featured_id ) {
+											$featured_src = wp_get_attachment_image_url( $form_featured_id, 'medium' );
+										}
+										?>
+										<div class="cb-listing-user-dashboard__featured-preview" id="cb-listing-dashboard-featured-preview">
+											<?php if ( $featured_src ) : ?>
+												<div class="cb-listing-user-dashboard__gallery-item">
+													<img src="<?php echo esc_url( $featured_src ); ?>" alt="" />
+													<button
+														type="button"
+														class="cb-listing-user-dashboard__gallery-remove cb-listing-user-dashboard__featured-remove"
+														id="cb-listing-dashboard-featured-remove"
+														aria-label="<?php esc_attr_e( 'Remove featured image', 'cb-listing-anything' ); ?>"
+													>
+														&times;
+													</button>
+												</div>
+											<?php endif; ?>
+										</div>
+										<input type="hidden" id="cb-listing-dashboard-featured-id" name="cb_listing_featured_image_id" value="<?php echo esc_attr( $form_featured_id ); ?>" />
+										<div class="cb-listing-user-dashboard__featured-actions">
+											<button type="button" class="button cb-listing-user-dashboard__featured-add" id="cb-listing-dashboard-featured-add">
+												<?php echo $form_featured_id ? esc_html__( 'Change image', 'cb-listing-anything' ) : esc_html__( 'Set featured image', 'cb-listing-anything' ); ?>
+											</button>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
 
 						<div class="cb-listing-user-dashboard__group">
 							<h4 class="cb-listing-user-dashboard__group-title">
@@ -1046,7 +1397,13 @@ JS;
 
 						<div class="cb-listing-user-dashboard__actions">
 							<button type="submit" class="cb-listing-user-dashboard__submit">
-								<?php esc_html_e( 'Submit listing for review', 'cb-listing-anything' ); ?>
+								<?php
+								if ( $editing_post_id ) {
+									esc_html_e( 'Update listing', 'cb-listing-anything' );
+								} else {
+									esc_html_e( 'Submit listing for review', 'cb-listing-anything' );
+								}
+								?>
 							</button>
 						</div>
 					</form>

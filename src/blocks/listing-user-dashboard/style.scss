@@ -243,6 +243,85 @@
 		margin: 0;
 	}
 
+	&__tags-select {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+
+	&__tags-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+	}
+
+	&__tag-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.2rem 0.6rem;
+		border-radius: 999px;
+		background: #e5e7eb;
+		font-size: 0.8rem;
+	}
+
+	&__tag-chip-remove {
+		border: none;
+		background: none;
+		color: #6b7280;
+		cursor: pointer;
+		font-size: 0.9rem;
+		line-height: 1;
+		padding: 0;
+
+		&:hover {
+			color: #111827;
+		}
+	}
+
+	&__tags-input {
+		border-radius: 0.5rem;
+		border: 1px solid #d1d5db;
+		padding: 0.45rem 0.75rem;
+		font-size: 0.95rem;
+		color: #111827;
+
+		&:focus {
+			outline: none;
+			border-color: #111827;
+			box-shadow: 0 0 0 1px #111827;
+		}
+	}
+
+	&__tags-suggestions {
+		position: relative;
+		z-index: 1;
+	}
+
+	&__tags-suggestions-list {
+		position: absolute;
+		left: 0;
+		right: 0;
+		margin-top: 0.1rem;
+		background: #ffffff;
+		border-radius: 0.5rem;
+		border: 1px solid #e5e7eb;
+		box-shadow: 0 8px 20px rgba(15, 23, 42, 0.15);
+		max-height: 220px;
+		overflow-y: auto;
+	}
+
+	&__tags-suggestion {
+		padding: 0.4rem 0.75rem;
+		font-size: 0.9rem;
+		color: #111827;
+		cursor: pointer;
+
+		&:hover {
+			background: #f3f4f6;
+		}
+	}
+
 	&__tag--other {
 		flex-direction: column;
 		align-items: flex-start;
@@ -357,6 +436,73 @@
 		grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
 		gap: 0.5rem;
 		margin-bottom: 0.5rem;
+	}
+
+	&__featured {
+		margin-top: 0.35rem;
+	}
+
+	&__featured-preview {
+		margin-bottom: 0.5rem;
+	}
+
+	&__featured-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	&__featured-add,
+	&__gallery-add {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.45rem 1.1rem;
+		border-radius: 999px;
+		border: none;
+		cursor: pointer;
+		background: var(--wp--preset--color--primary, #111827);
+		color: var(--wp--preset--color--background, #f9fafb);
+		font-weight: 600;
+		font-size: 0.9rem;
+		text-decoration: none;
+		box-shadow: none;
+		transform: none;
+		transition:
+			background 0.15s ease-in-out,
+			transform 0.1s ease-in-out,
+			box-shadow 0.1s ease-in-out;
+
+		&:hover {
+			background: color-mix(in srgb, var(--wp--preset--color--primary, #111827) 85%, #000000);
+			box-shadow: 0 8px 20px rgba(15, 23, 42, 0.25);
+			transform: translateY(-1px);
+		}
+
+		&:active {
+			transform: translateY(0);
+			box-shadow: none;
+		}
+	}
+
+	&__featured-remove {
+		width: 22px;
+		height: 22px;
+		border: none;
+		background: rgba(0, 0, 0, 0.6);
+		color: #ffffff;
+		border-radius: 999px;
+		cursor: pointer;
+		font-size: 14px;
+		line-height: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+
+		&:hover {
+			background: #b91c1c;
+		}
 	}
 
 	&__gallery-item {
