@@ -4,6 +4,7 @@ namespace CBListingAnything\Core;
 
 use CBListingAnything\Controllers\BlockController;
 use CBListingAnything\Controllers\CategoryImageController;
+use CBListingAnything\Controllers\MediaController;
 use CBListingAnything\Controllers\MetaBoxController;
 use CBListingAnything\Controllers\PostTypeController;
 use CBListingAnything\Controllers\SettingsController;
@@ -69,6 +70,11 @@ class Plugin {
 	private $category_image_controller;
 
 	/**
+	 * @var MediaController
+	 */
+	private $media_controller;
+
+	/**
 	 * Get plugin singleton instance.
 	 *
 	 * @return Plugin
@@ -91,6 +97,7 @@ class Plugin {
 		$this->block_controller          = new BlockController();
 		$this->settings_controller       = new SettingsController();
 		$this->category_image_controller = new CategoryImageController();
+		$this->media_controller          = new MediaController();
 		$this->rest_search_controller    = new RestSearchController();
 		$this->rest_term_controller      = new RestTermController();
 	}
@@ -109,6 +116,7 @@ class Plugin {
 		$this->block_controller->init();
 		$this->settings_controller->init();
 		$this->category_image_controller->init();
+		$this->media_controller->init();
 		add_action( 'rest_api_init', array( $this->rest_search_controller, 'register_routes' ) );
 		add_action( 'rest_api_init', array( $this->rest_term_controller, 'register_routes' ) );
 	}
