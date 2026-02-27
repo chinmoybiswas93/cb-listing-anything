@@ -67,20 +67,21 @@
 	}
 
 	&__arrow {
-		width: 44px;
-		height: 44px;
+		min-width: 36px;
+		min-height: 36px;
 		border: none;
-		border-radius: 50%;
-		background: rgba( 236, 72, 153, 0.9 );
-		color: #fff;
+		border-radius: var( --cb-cat-slider-arrow-radius, 999px );
+		background: var( --cb-cat-slider-arrow-bg, #f3f4f6 );
+		color: var( --cb-cat-slider-arrow-color, #111827 );
 		cursor: pointer;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		transition: background 0.2s;
+		padding: var( --cb-cat-slider-arrow-padding, 8px );
+		transition: background 0.2s, color 0.2s;
 
 		&:hover {
-			background: rgba( 219, 39, 119, 0.95 );
+			background: color-mix( in srgb, var( --cb-cat-slider-arrow-bg, #f3f4f6 ) 85%, #111827 );
 		}
 
 		&:disabled {

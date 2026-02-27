@@ -1,5 +1,5 @@
 import { registerBlockType } from '@wordpress/blocks';
-import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
+import { useBlockProps, InspectorControls, PanelColorSettings } from '@wordpress/block-editor';
 import { PanelBody, RangeControl, SelectControl, ToggleControl } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
@@ -10,7 +10,19 @@ import './editor.scss';
 
 registerBlockType( metadata.name, {
 	edit( { attributes, setAttributes } ) {
-		const { itemsToShow, height, showName, showCount, buttonPosition, buttonOutsideOffset, selectedCategoryIds = [] } = attributes;
+		const {
+			itemsToShow,
+			height,
+			showName,
+			showCount,
+			buttonPosition,
+			buttonOutsideOffset,
+			arrowBackgroundColor,
+			arrowIconColor,
+			arrowBorderRadius,
+			arrowPadding,
+			selectedCategoryIds = [],
+		} = attributes;
 		const blockProps = useBlockProps();
 
 		const { categories, isLoadingCategories } = useSelect( ( select ) => {
@@ -59,6 +71,38 @@ registerBlockType( metadata.name, {
 							min={ 160 }
 							max={ 500 }
 							step={ 10 }
+						/>
+					</PanelBody>
+					<PanelColorSettings
+						title={ __( 'Arrow Colors', 'cb-listing-anything' ) }
+						initialOpen={ false }
+						colorSettings={ [
+							{
+								value: arrowBackgroundColor,
+								onChange: ( value ) => setAttributes( { arrowBackgroundColor: value } ),
+								label: __( 'Background', 'cb-listing-anything' ),
+							},
+							{
+								value: arrowIconColor,
+								onChange: ( value ) => setAttributes( { arrowIconColor: value } ),
+								label: __( 'Icon', 'cb-listing-anything' ),
+							},
+						] }
+					/>
+					<PanelBody title={ __( 'Arrow Styles', 'cb-listing-anything' ) } initialOpen={ false }>
+						<RangeControl
+							label={ __( 'Border radius (%)', 'cb-listing-anything' ) }
+							value={ arrowBorderRadius ?? 50 }
+							onChange={ ( value ) => setAttributes( { arrowBorderRadius: value } ) }
+							min={ 0 }
+							max={ 50 }
+						/>
+						<RangeControl
+							label={ __( 'Inner padding (px)', 'cb-listing-anything' ) }
+							value={ arrowPadding ?? 0 }
+							onChange={ ( value ) => setAttributes( { arrowPadding: value } ) }
+							min={ 0 }
+							max={ 12 }
 						/>
 					</PanelBody>
 					<PanelBody title={ __( 'Categories', 'cb-listing-anything' ) } initialOpen={ false }>

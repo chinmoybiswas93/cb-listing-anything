@@ -1,0 +1,27 @@
+.wp-block-cb-listing-anything-listing-cards-slider {
+	.cb-categories-slider {
+		margin-top: 1rem;
+	}
+}
+
+.cb-responsive-range-control {
+	margin-top: 12px;
+
+	&__header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		margin-bottom: 4px;
+	}
+
+	&__label {
+		font-weight: 500;
+	}
+
+	&__devices .components-button {
+		padding: 0 4px;
+	}
+}
+
+

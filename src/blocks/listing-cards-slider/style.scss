@@ -1,0 +1,41 @@
+@use '../categories-slider/style' as *;
+@use '../listings-card/style' as *;
+
+/* Modifier for listing cards slider, if any tweaks are needed later. */
+.cb-categories-slider.cb-categories-slider--listings {
+	.cb-categories-slider__item {
+		/* Let the slide height follow the card height automatically. */
+		display: flex;
+		height: auto;
+		min-height: 0;
+		flex: 0 0 var(--cb-listing-slider-item-width-desktop, var(--cb-cat-slider-item-width, 100%));
+	}
+
+	.cb-listing-card {
+		width: 100%;
+		box-shadow: none;
+		border: 1px solid #e5e7eb;
+	}
+
+	.cb-listing-card:hover {
+		box-shadow: none;
+		transform: none;
+	}
+}
+
+@media (max-width: 1024px) {
+	.cb-categories-slider.cb-categories-slider--listings {
+		.cb-categories-slider__item {
+			flex: 0 0 var(--cb-listing-slider-item-width-tablet, 50%);
+		}
+	}
+}
+
+@media (max-width: 600px) {
+	.cb-categories-slider.cb-categories-slider--listings {
+		.cb-categories-slider__item {
+			flex: 0 0 var(--cb-listing-slider-item-width-mobile, 100%);
+		}
+	}
+}
+

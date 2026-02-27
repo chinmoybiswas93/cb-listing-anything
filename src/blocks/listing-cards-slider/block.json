@@ -1,12 +1,12 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "cb-listing-anything/categories-slider",
-	"title": "Categories Slider",
+	"name": "cb-listing-anything/listing-cards-slider",
+	"title": "Listing Cards Slider",
 	"category": "widgets",
-	"icon": "slides",
-	"description": "Display listing categories in a horizontal slider with image, name, and count.",
-	"keywords": [ "categories", "slider", "carousel", "listings" ],
+	"icon": "images-alt2",
+	"description": "Display listing cards in a horizontal slider with full card layout and query controls.",
+	"keywords": [ "listings", "slider", "carousel", "cards" ],
 	"textdomain": "cb-listing-anything",
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./index.css",
@@ -27,7 +27,19 @@
 		},
 		"itemsToShow": {
 			"type": "number",
-			"default": 6
+			"default": 4
+		},
+		"itemsToShowDesktop": {
+			"type": "number",
+			"default": 4
+		},
+		"itemsToShowTablet": {
+			"type": "number",
+			"default": 2
+		},
+		"itemsToShowMobile": {
+			"type": "number",
+			"default": 1
 		},
 		"arrowBackgroundColor": {
 			"type": "string"
@@ -43,21 +55,41 @@
 			"type": "number",
 			"default": 0
 		},
-		"height": {
+		"useCurrentQuery": {
+			"type": "boolean",
+			"default": false
+		},
+		"postsPerPage": {
 			"type": "number",
-			"default": 280
+			"default": 8
 		},
-		"showName": {
+		"category": {
+			"type": "number",
+			"default": 0
+		},
+		"showCategories": {
 			"type": "boolean",
 			"default": true
 		},
-		"showCount": {
+		"showOpenStatus": {
 			"type": "boolean",
 			"default": true
 		},
-		"selectedCategoryIds": {
-			"type": "array",
-			"default": []
+		"showPrice": {
+			"type": "boolean",
+			"default": true
+		},
+		"showTags": {
+			"type": "boolean",
+			"default": true
+		},
+		"showAddress": {
+			"type": "boolean",
+			"default": true
+		},
+		"showCallButton": {
+			"type": "boolean",
+			"default": true
 		}
 	},
 	"supports": {
@@ -66,3 +98,4 @@
 	},
 	"render": "file:./render.php"
 }
+
