@@ -99,6 +99,10 @@ endif;
 $current_user = wp_get_current_user();
 $tab          = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'profile'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
+// Only admins and List Contributors can submit listings via the dashboard.
+$user_roles  = (array) $current_user->roles;
+$can_submit  = current_user_can( 'manage_options' ) || in_array( 'cb_listing_contributor', $user_roles, true );
+
 if ( ! in_array( $tab, array( 'profile', 'add', 'listings' ), true ) ) {
 	$tab = 'profile';
 }
@@ -118,6 +122,8 @@ if ( 'add' === $tab && 'POST' === $_SERVER['REQUEST_METHOD'] && ! ( defined( 'RE
 	if ( isset( $_POST['cb_listing_user_dashboard_action'] ) && 'add_listing' === $_POST['cb_listing_user_dashboard_action'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( ! isset( $_POST['_cb_listing_add_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_cb_listing_add_nonce'] ) ), 'cb_listing_add_listing' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			$errors[] = __( 'Security check failed. Please try again.', 'cb-listing-anything' );
+		} elseif ( ! $can_submit ) {
+			$errors[] = __( 'You are not allowed to submit listings from this account.', 'cb-listing-anything' );
 		} else {
 			$form_title   = isset( $_POST['cb_listing_title'] ) ? sanitize_text_field( wp_unslash( $_POST['cb_listing_title'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			$form_content = isset( $_POST['cb_listing_content'] ) ? wp_kses_post( wp_unslash( $_POST['cb_listing_content'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -262,6 +268,7 @@ if ( 'add' === $tab ) {
 						</div>
 					<?php endif; ?>
 
+					<?php if ( $can_submit ) : ?>
 					<form class="cb-listing-user-dashboard__form" method="post">
 						<?php wp_nonce_field( 'cb_listing_add_listing', '_cb_listing_add_nonce' ); ?>
 						<input type="hidden" name="cb_listing_user_dashboard_action" value="add_listing" />
@@ -345,6 +352,9 @@ if ( 'add' === $tab ) {
 							</button>
 						</div>
 					</form>
+					<?php else : ?>
+						<p><?php esc_html_e( 'You do not have permission to submit listings from this account.', 'cb-listing-anything' ); ?></p>
+					<?php endif; ?>
 				</div>
 			<?php elseif ( 'listings' === $tab ) : ?>
 				<div class="cb-listing-user-dashboard__section cb-listing-user-dashboard__section--listings">
@@ -370,7 +380,6 @@ if ( 'add' === $tab ) {
 							<thead>
 								<tr>
 									<th><?php esc_html_e( 'Title', 'cb-listing-anything' ); ?></th>
-									<th><?php esc_html_e( 'Author', 'cb-listing-anything' ); ?></th>
 									<th><?php esc_html_e( 'Status', 'cb-listing-anything' ); ?></th>
 									<th><?php esc_html_e( 'Date', 'cb-listing-anything' ); ?></th>
 								</tr>
@@ -391,7 +400,6 @@ if ( 'add' === $tab ) {
 												<?php the_title(); ?>
 											<?php endif; ?>
 										</td>
-										<td><?php echo esc_html( get_the_author() ); ?></td>
 										<td>
 											<span class="cb-listing-user-dashboard__status cb-listing-user-dashboard__status--<?php echo esc_attr( $status ); ?>">
 												<?php

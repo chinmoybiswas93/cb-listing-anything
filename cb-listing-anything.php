@@ -35,6 +35,17 @@ function cb_listing_anything_activate() {
 		return;
 	}
 
+	// Ensure custom role for front-end listing submissions exists.
+	add_role(
+		'cb_listing_contributor',
+		__( 'List Contributor', 'cb-listing-anything' ),
+		array(
+			'read'         => true,
+			'edit_posts'   => true,
+			'upload_files' => true,
+		)
+	);
+
 	$plugin = CBListingAnything\Core\Plugin::instance();
 	$plugin->register_content_types();
 

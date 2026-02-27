@@ -57,7 +57,7 @@ class PostType {
 			'label'               => __( 'Listing', 'cb-listing-anything' ),
 			'description'         => __( 'Listing items with custom details', 'cb-listing-anything' ),
 			'labels'              => self::labels(),
-			'supports'            => array( 'title', 'editor', 'thumbnail', 'excerpt', 'custom-fields', 'revisions' ),
+			'supports'            => array( 'title', 'editor', 'thumbnail', 'excerpt', 'custom-fields', 'revisions', 'author' ),
 			'taxonomies'          => array( 'cb_listing_category', 'cb_listing_tag' ),
 			'hierarchical'        => false,
 			'public'              => true,
