@@ -24,6 +24,12 @@
 		"buttonText": {
 			"type": "string",
 			"default": "Search"
+		},
+		"buttonBackgroundColor": {
+			"type": "string"
+		},
+		"buttonTextColor": {
+			"type": "string"
 		}
 	},
 	"supports": {

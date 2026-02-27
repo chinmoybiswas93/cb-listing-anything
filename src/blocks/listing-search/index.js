@@ -1,5 +1,5 @@
 import { registerBlockType } from '@wordpress/blocks';
-import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
+import { useBlockProps, InspectorControls, PanelColorSettings } from '@wordpress/block-editor';
 import { PanelBody, TextControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import metadata from './block.json';
@@ -8,8 +8,20 @@ import './editor.scss';
 
 registerBlockType( metadata.name, {
 	edit( { attributes, setAttributes } ) {
-		const { placeholder, buttonText } = attributes;
-		const blockProps = useBlockProps( { className: 'cb-listing-search' } );
+		const { placeholder, buttonText, buttonBackgroundColor, buttonTextColor } = attributes;
+
+		const style = {};
+		if ( buttonBackgroundColor ) {
+			style[ '--cb-search-button-bg' ] = buttonBackgroundColor;
+		}
+		if ( buttonTextColor ) {
+			style[ '--cb-search-button-color' ] = buttonTextColor;
+		}
+
+		const blockProps = useBlockProps( {
+			className: 'cb-listing-search',
+			style,
+		} );
 
 		return (
 			<>
@@ -26,6 +38,21 @@ registerBlockType( metadata.name, {
 							onChange={ ( value ) => setAttributes( { buttonText: value } ) }
 						/>
 					</PanelBody>
+					<PanelColorSettings
+						title={ __( 'Button Colors', 'cb-listing-anything' ) }
+						colorSettings={ [
+							{
+								value: buttonBackgroundColor,
+								onChange: ( value ) => setAttributes( { buttonBackgroundColor: value } ),
+								label: __( 'Background', 'cb-listing-anything' ),
+							},
+							{
+								value: buttonTextColor,
+								onChange: ( value ) => setAttributes( { buttonTextColor: value } ),
+								label: __( 'Text', 'cb-listing-anything' ),
+							},
+						] }
+					/>
 				</InspectorControls>
 				<div { ...blockProps }>
 					<div className="cb-listing-search__form">

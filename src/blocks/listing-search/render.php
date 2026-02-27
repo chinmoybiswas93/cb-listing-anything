@@ -6,7 +6,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 $placeholder = isset( $attributes['placeholder'] ) ? $attributes['placeholder'] : __( 'Keywords', 'cb-listing-anything' );
 $button_text = isset( $attributes['buttonText'] ) ? $attributes['buttonText'] : __( 'Search', 'cb-listing-anything' );
 $archive_url = get_post_type_archive_link( 'cb_listing' );
-$wrapper     = get_block_wrapper_attributes( array( 'class' => 'cb-listing-search' ) );
+
+// Optional button colors.
+$button_bg   = isset( $attributes['buttonBackgroundColor'] ) ? sanitize_hex_color( $attributes['buttonBackgroundColor'] ) : '';
+$button_text_color = isset( $attributes['buttonTextColor'] ) ? sanitize_hex_color( $attributes['buttonTextColor'] ) : '';
+
+$style = '';
+if ( $button_bg ) {
+	$style .= '--cb-search-button-bg: ' . $button_bg . ';';
+}
+if ( $button_text_color ) {
+	$style .= '--cb-search-button-color: ' . $button_text_color . ';';
+}
+
+$wrapper_args = array( 'class' => 'cb-listing-search' );
+if ( $style ) {
+	$wrapper_args['style'] = $style;
+}
+$wrapper = get_block_wrapper_attributes( $wrapper_args );
 
 $terms = get_terms( array(
 	'taxonomy'   => 'cb_listing_category',
