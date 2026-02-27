@@ -88,6 +88,28 @@ function cb_listing_anything() {
 }
 
 /**
+ * Hide the WordPress admin bar for List Contributor users.
+ *
+ * @param bool $show Whether to show the admin bar for the current user.
+ * @return bool
+ */
+function cb_listing_anything_maybe_hide_admin_bar( $show ) {
+	if ( ! is_user_logged_in() ) {
+		return $show;
+	}
+
+	$user = wp_get_current_user();
+
+	if ( in_array( 'cb_listing_contributor', (array) $user->roles, true ) ) {
+		return false;
+	}
+
+	return $show;
+}
+
+add_filter( 'show_admin_bar', 'cb_listing_anything_maybe_hide_admin_bar' );
+
+/**
  * Get the category image attachment ID for a listing category term.
  *
  * @param int $term_id Listing category term ID.

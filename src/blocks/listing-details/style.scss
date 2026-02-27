@@ -86,6 +86,103 @@
 	}
 }
 
+.cb-listing-single__lightbox {
+	position: fixed;
+	inset: 0;
+	z-index: 9999;
+	display: none;
+	align-items: center;
+	justify-content: center;
+}
+
+.cb-listing-single__lightbox.is-open {
+	display: flex;
+}
+
+.cb-listing-single__lightbox-backdrop {
+	position: absolute;
+	inset: 0;
+	background: rgba(15, 23, 42, 0.8);
+}
+
+.cb-listing-single__lightbox-content {
+	position: relative;
+	z-index: 1;
+	max-width: 960px;
+	width: 90%;
+	max-height: 90vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.cb-listing-single__lightbox-inner {
+	position: relative;
+	width: 100%;
+	max-height: 90vh;
+	border-radius: 12px;
+	overflow: hidden;
+	box-shadow: 0 22px 45px rgba(15, 23, 42, 0.55);
+}
+
+.cb-listing-single__lightbox-image {
+	display: block;
+	width: 100%;
+	height: auto;
+	max-height: 90vh;
+	object-fit: contain;
+	background: #000;
+}
+
+.cb-listing-single__lightbox-close {
+	position: absolute;
+	top: -40px;
+	right: 0;
+	width: 32px;
+	height: 32px;
+	border-radius: 999px;
+	border: none;
+	background: rgba(15, 23, 42, 0.9);
+	color: #fff;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 20px;
+	line-height: 1;
+	box-shadow: 0 6px 18px rgba(15, 23, 42, 0.45);
+}
+
+.cb-listing-single__lightbox-arrow {
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 40px;
+	height: 40px;
+	border-radius: 999px;
+	border: none;
+	background: rgba(15, 23, 42, 0.9);
+	color: #fff;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 12px 30px rgba(15, 23, 42, 0.6);
+
+	&--prev {
+		left: -52px;
+	}
+
+	&--next {
+		right: -52px;
+	}
+}
+
+html.cb-listing-single--lightbox-open,
+body.cb-listing-single--lightbox-open {
+	overflow: hidden;
+}
+
 .cb-listing-single__gallery-arrow {
 	position: absolute;
 	top: 50%;
@@ -442,6 +539,20 @@
 	.cb-listing-single__gallery-slide {
 		flex: 0 0 calc(50% - 4px);
 		height: 200px;
+	}
+
+	.cb-listing-single__lightbox-content {
+		width: 94%;
+	}
+
+	.cb-listing-single__lightbox-arrow {
+		&--prev {
+			left: 8px;
+		}
+
+		&--next {
+			right: 8px;
+		}
 	}
 }
 

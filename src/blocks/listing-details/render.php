@@ -112,14 +112,20 @@ $wrapper = get_block_wrapper_attributes(array(
 				<div class="cb-listing-single__gallery">
 					<div class="cb-listing-single__gallery-track">
 						<?php foreach ($all_images as $img_id) :
-							$img_url = wp_get_attachment_image_url($img_id, 'medium_large');
-							$img_alt = get_post_meta($img_id, '_wp_attachment_image_alt', true);
+							$img_url  = wp_get_attachment_image_url($img_id, 'medium_large');
+							$img_full = wp_get_attachment_image_url($img_id, 'full');
+							$img_alt  = get_post_meta($img_id, '_wp_attachment_image_alt', true);
 							if (! $img_url) {
 								continue;
 							}
 						?>
 							<div class="cb-listing-single__gallery-slide">
-								<img src="<?php echo esc_url($img_url); ?>" alt="<?php echo esc_attr($img_alt); ?>" loading="lazy" />
+								<img
+									src="<?php echo esc_url($img_url); ?>"
+									data-full="<?php echo esc_url($img_full ? $img_full : $img_url); ?>"
+									alt="<?php echo esc_attr($img_alt); ?>"
+									loading="lazy"
+								/>
 							</div>
 						<?php endforeach; ?>
 					</div>
@@ -135,6 +141,28 @@ $wrapper = get_block_wrapper_attributes(array(
 							</svg>
 						</button>
 					<?php endif; ?>
+
+					<div class="cb-listing-single__lightbox" aria-hidden="true">
+						<div class="cb-listing-single__lightbox-backdrop"></div>
+						<div class="cb-listing-single__lightbox-content" role="dialog" aria-modal="true" aria-label="<?php esc_attr_e('Listing image', 'cb-listing-anything'); ?>">
+							<button type="button" class="cb-listing-single__lightbox-close" aria-label="<?php esc_attr_e('Close', 'cb-listing-anything'); ?>">
+								&times;
+							</button>
+							<button type="button" class="cb-listing-single__lightbox-arrow cb-listing-single__lightbox-arrow--prev" aria-label="<?php esc_attr_e('Previous image', 'cb-listing-anything'); ?>">
+								<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+									<polyline points="15 18 9 12 15 6" />
+								</svg>
+							</button>
+							<button type="button" class="cb-listing-single__lightbox-arrow cb-listing-single__lightbox-arrow--next" aria-label="<?php esc_attr_e('Next image', 'cb-listing-anything'); ?>">
+								<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+									<polyline points="9 18 15 12 9 6" />
+								</svg>
+							</button>
+							<div class="cb-listing-single__lightbox-inner">
+								<img class="cb-listing-single__lightbox-image" src="" alt="" />
+							</div>
+						</div>
+					</div>
 				</div>
 			<?php endif; ?>
 
