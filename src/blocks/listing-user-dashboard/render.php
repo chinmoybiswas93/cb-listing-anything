@@ -171,13 +171,8 @@ if ( 'POST' === $_SERVER['REQUEST_METHOD'] && ! ( defined( 'REST_REQUEST' ) && R
 		$delete_post_id = isset( $_POST['cb_listing_post_id'] ) ? absint( wp_unslash( $_POST['cb_listing_post_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 		if ( ! isset( $_POST['_cb_listing_delete_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_cb_listing_delete_nonce'] ) ), 'cb_listing_delete_listing' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$redirect_url = add_query_arg(
-				array(
-					'tab'      => 'listings',
-					'cbld_msg' => 'delete_failed',
-				),
-				$base_url
-			);
+			set_transient( 'cb_listing_anything_dashboard_notice_' . get_current_user_id(), 'delete_failed', MINUTE_IN_SECONDS );
+			$redirect_url = add_query_arg( 'tab', 'listings', $base_url );
 			wp_safe_redirect( $redirect_url );
 			exit;
 		}
@@ -185,24 +180,14 @@ if ( 'POST' === $_SERVER['REQUEST_METHOD'] && ! ( defined( 'REST_REQUEST' ) && R
 		if ( $delete_post_id && current_user_can( 'delete_post', $delete_post_id ) ) {
 			wp_trash_post( $delete_post_id );
 
-			$redirect_url = add_query_arg(
-				array(
-					'tab'      => 'listings',
-					'cbld_msg' => 'deleted',
-				),
-				$base_url
-			);
+			set_transient( 'cb_listing_anything_dashboard_notice_' . get_current_user_id(), 'deleted', MINUTE_IN_SECONDS );
+			$redirect_url = add_query_arg( 'tab', 'listings', $base_url );
 			wp_safe_redirect( $redirect_url );
 			exit;
 		}
 
-		$redirect_url = add_query_arg(
-			array(
-				'tab'      => 'listings',
-				'cbld_msg' => 'delete_failed',
-			),
-			$base_url
-		);
+		set_transient( 'cb_listing_anything_dashboard_notice_' . get_current_user_id(), 'delete_failed', MINUTE_IN_SECONDS );
+		$redirect_url = add_query_arg( 'tab', 'listings', $base_url );
 		wp_safe_redirect( $redirect_url );
 		exit;
 	}
@@ -602,6 +587,52 @@ if ( 'add' === $tab ) {
 		updateInput();
 	});
 })(jQuery);
+
+;(function($) {
+	$(function() {
+		var toggle = $('.cb-listing-user-dashboard__tags-other-toggle');
+
+		function syncOtherInput() {
+			toggle['each'](function() {
+				var checkbox = $(this);
+				var container = checkbox['closest']('.cb-listing-user-dashboard__tag--other');
+				var inputEl = container['find']('.cb-listing-user-dashboard__tags-other-input');
+
+				if ( checkbox['is'](':checked') ) {
+					inputEl['addClass']('cb-listing-user-dashboard__tags-other-input--visible');
+				} else {
+					inputEl['removeClass']('cb-listing-user-dashboard__tags-other-input--visible');
+				}
+			});
+		}
+
+		toggle['on']('change', syncOtherInput);
+		syncOtherInput();
+	});
+})(jQuery);
+
+;(function($) {
+	$(function() {
+		function attachTimePickerHandler( selector ) {
+			var inputEl = $( selector );
+
+			if ( ! inputEl['length'] ) {
+				return;
+			}
+
+			inputEl['on']('click', function() {
+				var el = this;
+
+				if ( typeof el.showPicker === 'function' ) {
+					el.showPicker();
+				}
+			});
+		}
+
+		attachTimePickerHandler( '#cb-listing-opening-time' );
+		attachTimePickerHandler( '#cb-listing-closing-time' );
+	});
+})(jQuery);
 JS;
 
 					wp_register_script( 'cb-listing-user-dashboard-gallery', '', array( 'jquery', 'media-views' ), CB_LISTING_ANYTHING_VERSION, true );
@@ -680,12 +711,15 @@ JS;
 										</label>
 									<?php endforeach; ?>
 									<label class="cb-listing-user-dashboard__tag cb-listing-user-dashboard__tag--other">
-										<input
-											type="checkbox"
-											name="cb_listing_tags_other_toggle"
-											value="1"
-										/>
-										<span><?php esc_html_e( 'Other', 'cb-listing-anything' ); ?></span>
+										<span class="cb-listing-user-dashboard__tag-other-main">
+											<input
+												type="checkbox"
+												name="cb_listing_tags_other_toggle"
+												value="1"
+												class="cb-listing-user-dashboard__tags-other-toggle"
+											/>
+											<span><?php esc_html_e( 'Other', 'cb-listing-anything' ); ?></span>
+										</span>
 										<input
 											type="text"
 											name="cb_listing_tags_other"
@@ -1027,13 +1061,16 @@ JS;
 					$listings_notice_type = '';
 					$listings_notice_text = '';
 
-					if ( isset( $_GET['cbld_msg'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-						$msg = sanitize_key( wp_unslash( $_GET['cbld_msg'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+					$notice_key   = 'cb_listing_anything_dashboard_notice_' . get_current_user_id();
+					$notice_value = get_transient( $notice_key );
 
-						if ( 'deleted' === $msg ) {
+					if ( $notice_value ) {
+						delete_transient( $notice_key );
+
+						if ( 'deleted' === $notice_value ) {
 							$listings_notice_type = 'success';
 							$listings_notice_text = __( 'Listing moved to trash.', 'cb-listing-anything' );
-						} elseif ( 'delete_failed' === $msg ) {
+						} elseif ( 'delete_failed' === $notice_value ) {
 							$listings_notice_type = 'error';
 							$listings_notice_text = __( 'Unable to delete the listing. Please try again.', 'cb-listing-anything' );
 						}
@@ -1051,7 +1088,7 @@ JS;
 					$listings_query = new WP_Query(
 						array(
 							'post_type'      => 'cb_listing',
-							'post_status'    => array( 'pending', 'publish', 'draft' ),
+							'post_status'    => array( 'pending', 'publish', 'draft', 'trash' ),
 							'author'         => get_current_user_id(),
 							'posts_per_page' => 10,
 							'paged'          => $paged,
