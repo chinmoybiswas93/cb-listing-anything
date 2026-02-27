@@ -125,7 +125,14 @@ class MetaBoxController extends AbstractController {
 			}
 			.cb-listing-gallery__remove:hover { background: #d63638; }
 			#listing_details .postbox-header .handlediv { display: none; }
-			#listing_details .postbox-header { cursor: default; }
+			#listing_details .postbox-header .handle-order-higher,
+			#listing_details .postbox-header .handle-order-lower {
+				visibility: hidden;
+			}
+			#listing_details .postbox-header {
+				cursor: default;
+				pointer-events: none;
+			}
 			#listing_details .inside { display: block !important; }
 			@media (max-width: 782px) {
 				.cb-listing-meta-box__row {
