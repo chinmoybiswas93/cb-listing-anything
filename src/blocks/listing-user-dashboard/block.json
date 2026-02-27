@@ -1,0 +1,30 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "cb-listing-anything/listing-user-dashboard",
+	"title": "CB Listing User Dashboard",
+	"category": "widgets",
+	"icon": "admin-users",
+	"description": "User dashboard for managing CB Listings – login, profile, add listing, and my listings.",
+	"keywords": [ "listing", "user", "dashboard", "account" ],
+	"textdomain": "cb-listing-anything",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"attributes": {
+		"align": {
+			"type": "string",
+			"default": "wide"
+		},
+		"title": {
+			"type": "string",
+			"default": "My Listings Dashboard"
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": [ "wide", "full" ]
+	},
+	"render": "file:./render.php"
+}
+
