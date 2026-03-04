@@ -5,6 +5,7 @@ namespace CBListingAnything\Controllers;
 use CBListingAnything\Config\PostType as PostTypeConfig;
 use CBListingAnything\Config\Taxonomies as TaxonomiesConfig;
 use CBListingAnything\Core\AbstractController;
+use CBListingAnything\Models\ListingMeta as ListingMetaModel;
 
 class SettingsController extends AbstractController {
 
@@ -140,6 +141,31 @@ class SettingsController extends AbstractController {
 			}
 		}
 
+		if ( array_key_exists( 'enabled_fields', $input ) ) {
+			$raw_enabled = $input['enabled_fields'];
+
+			if ( ! is_array( $raw_enabled ) ) {
+				$raw_enabled = array();
+			}
+
+			$enabled = array();
+			foreach ( $raw_enabled as $value ) {
+				$value = sanitize_text_field( (string) $value );
+				if ( in_array( $value, ListingMetaModel::fields(), true ) ) {
+					$enabled[] = $value;
+				}
+			}
+
+			$enabled = array_values( array_unique( $enabled ) );
+
+			// If admin submits Fields tab with nothing selected, fall back to all fields enabled.
+			if ( empty( $enabled ) ) {
+				$enabled = ListingMetaModel::fields();
+			}
+
+			$sanitized['enabled_fields'] = $enabled;
+		}
+
 		return $sanitized;
 	}
 
@@ -201,6 +227,7 @@ class SettingsController extends AbstractController {
 		$current_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'general';
 		$tabs        = array(
 			'general'  => __( 'General', 'cb-listing-anything' ),
+			'fields'   => __( 'Fields', 'cb-listing-anything' ),
 			'display'  => __( 'Display', 'cb-listing-anything' ),
 			'advanced' => __( 'Advanced', 'cb-listing-anything' ),
 		);
@@ -220,6 +247,9 @@ class SettingsController extends AbstractController {
 			<div class="cb-listing-settings-content" style="margin-top: 20px;">
 				<?php
 				switch ( $current_tab ) {
+					case 'fields':
+						$this->render_tab_fields();
+						break;
 					case 'display':
 						$this->render_tab_display();
 						break;
@@ -267,6 +297,192 @@ class SettingsController extends AbstractController {
 		<?php
 	}
 
+	/**
+	 * Render the Fields settings tab.
+	 *
+	 * @return void
+	 */
+	private function render_tab_fields() {
+		$definitions      = ListingMetaModel::definitions();
+		$categories       = ListingMetaModel::categories();
+		$grouped          = ListingMetaModel::fields_by_category();
+		$current_enabled  = ListingMetaModel::normalize_enabled_fields( self::get( 'enabled_fields', null ) );
+		$enabled_lookup   = array_fill_keys( $current_enabled, true );
+		$option_key_esc   = esc_attr( self::OPTION_KEY );
+		$settings_group   = 'cb_listing_anything_general';
+		?>
+		<style>
+			.cb-listing-fields-settings {
+				max-width: 960px;
+			}
+			.cb-listing-fields-card {
+				background: #fff;
+				border: 1px solid #dcdcde;
+				border-radius: 8px;
+				padding: 20px 22px;
+				margin-bottom: 20px;
+				box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+			}
+			.cb-listing-fields-card-header {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				gap: 12px;
+				margin-bottom: 8px;
+			}
+			.cb-listing-fields-card-header h2 {
+				margin: 0;
+				font-size: 15px;
+				font-weight: 600;
+			}
+			.cb-listing-fields-count {
+				font-size: 12px;
+				color: #50575e;
+				background: #f6f7f7;
+				border-radius: 999px;
+				padding: 2px 10px;
+			}
+			.cb-listing-fields-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+				gap: 8px 16px;
+				margin-top: 12px;
+			}
+			.cb-listing-field {
+				display: flex;
+				align-items: flex-start;
+				gap: 8px;
+				padding: 8px 10px;
+				border-radius: 6px;
+				border: 1px solid transparent;
+			}
+			.cb-listing-field input[type="checkbox"] {
+				margin-top: 2px;
+			}
+			.cb-listing-field-main {
+				display: flex;
+				flex-direction: column;
+				gap: 2px;
+			}
+			.cb-listing-field-label {
+				font-size: 13px;
+				font-weight: 500;
+				color: #1e1e1e;
+			}
+			.cb-listing-field-meta {
+				font-size: 11px;
+				color: #646970;
+				text-transform: capitalize;
+			}
+			.cb-listing-field:hover {
+				background: #f6f7f7;
+				border-color: #d0d1d4;
+			}
+			@media (max-width: 782px) {
+				.cb-listing-fields-card {
+					padding: 16px;
+				}
+				.cb-listing-fields-grid {
+					grid-template-columns: 1fr;
+				}
+			}
+		</style>
+		<form method="post" action="options.php">
+			<?php
+			settings_fields( $settings_group );
+			?>
+			<div class="cb-listing-fields-settings">
+				<?php foreach ( $categories as $slug => $category ) :
+					$label       = isset( $category['label'] ) ? $category['label'] : ucfirst( $slug );
+					$fields_in_category = isset( $grouped[ $slug ]['fields'] ) ? $grouped[ $slug ]['fields'] : array();
+					$total_count       = count( $fields_in_category );
+
+					if ( 0 === $total_count ) {
+						continue;
+					}
+
+					$enabled_count = 0;
+					foreach ( $fields_in_category as $field_key => $field_def ) {
+						if ( isset( $enabled_lookup[ $field_key ] ) ) {
+							$enabled_count++;
+						}
+					}
+
+					?>
+					<div class="cb-listing-fields-card">
+						<div class="cb-listing-fields-card-header">
+							<h2><?php echo esc_html( $label ); ?></h2>
+							<span class="cb-listing-fields-count">
+								<?php
+								printf(
+									/* translators: 1: enabled count, 2: total fields */
+									'%1$d / %2$d %3$s',
+									(int) $enabled_count,
+									(int) $total_count,
+									1 === $total_count ? esc_html__( 'field', 'cb-listing-anything' ) : esc_html__( 'fields', 'cb-listing-anything' )
+								);
+								?>
+							</span>
+						</div>
+						<div class="cb-listing-fields-grid">
+							<?php foreach ( $fields_in_category as $field_key => $field_def ) :
+								$field_label = isset( $field_def['label'] ) ? $field_def['label'] : $field_key;
+								$field_type  = isset( $field_def['type'] ) ? $field_def['type'] : 'text';
+								$checked     = isset( $enabled_lookup[ $field_key ] );
+								?>
+								<label class="cb-listing-field">
+									<input
+										type="checkbox"
+										name="<?php echo $option_key_esc; ?>[enabled_fields][]"
+										value="<?php echo esc_attr( $field_key ); ?>"
+										<?php checked( $checked ); ?>
+									/>
+									<span class="cb-listing-field-main">
+										<span class="cb-listing-field-label"><?php echo esc_html( $field_label ); ?></span>
+										<span class="cb-listing-field-meta">
+											<?php
+											// Human-readable type label.
+											switch ( $field_type ) {
+												case 'email':
+													$type_label = __( 'Email field', 'cb-listing-anything' );
+													break;
+												case 'tel':
+													$type_label = __( 'Phone field', 'cb-listing-anything' );
+													break;
+												case 'url':
+													$type_label = __( 'URL field', 'cb-listing-anything' );
+													break;
+												case 'time':
+													$type_label = __( 'Time field', 'cb-listing-anything' );
+													break;
+												case 'checkbox_group':
+													$type_label = __( 'Checkbox group', 'cb-listing-anything' );
+													break;
+												case 'media_gallery':
+													$type_label = __( 'Media gallery', 'cb-listing-anything' );
+													break;
+												case 'rich_text':
+													$type_label = __( 'Rich text editor', 'cb-listing-anything' );
+													break;
+												default:
+													$type_label = __( 'Text field', 'cb-listing-anything' );
+													break;
+											}
+											echo esc_html( $type_label );
+											?>
+										</span>
+									</span>
+								</label>
+							<?php endforeach; ?>
+						</div>
+					</div>
+				<?php endforeach; ?>
+			</div>
+			<?php submit_button(); ?>
+		</form>
+		<?php
+	}
+
 	public static function get( $key, $default = '' ) {
 		$options  = get_option( self::OPTION_KEY, self::defaults() );
 		return isset( $options[ $key ] ) ? $options[ $key ] : $default;
@@ -275,8 +491,9 @@ class SettingsController extends AbstractController {
 	public static function defaults() {
 		return array(
 			'currency'       => 'USD',
-			'listing_title' => __( 'Listing', 'cb-listing-anything' ),
-			'listing_slug'  => 'cb_listing',
+			'listing_title'  => __( 'Listing', 'cb-listing-anything' ),
+			'listing_slug'   => 'cb_listing',
+			'enabled_fields' => ListingMetaModel::fields(),
 		);
 	}
 

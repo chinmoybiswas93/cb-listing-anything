@@ -228,6 +228,10 @@ class MetaBoxController extends AbstractController {
 	public function render_listing_details_meta_box( $post ) {
 		wp_nonce_field( 'listing_details_meta_box', 'listing_details_meta_box_nonce' );
 
+		$enabled_fields = ListingMeta::normalize_enabled_fields(
+			SettingsController::get( 'enabled_fields', null )
+		);
+
 		$values = array();
 		foreach ( ListingMeta::fields() as $field ) {
 			$values[ $field ] = get_post_meta( $post->ID, ListingMeta::key( $field ), true );
@@ -266,11 +270,20 @@ class MetaBoxController extends AbstractController {
 			return;
 		}
 
+		$enabled_fields = ListingMeta::normalize_enabled_fields(
+			SettingsController::get( 'enabled_fields', null )
+		);
+
 		foreach ( ListingMeta::fields() as $field ) {
+			if ( ! in_array( $field, $enabled_fields, true ) ) {
+				continue;
+			}
+
 			if ( isset( $_POST[ $field ] ) ) {
 				$value = wp_unslash( $_POST[ $field ] );
 				update_post_meta( $post_id, ListingMeta::key( $field ), ListingMeta::sanitize( $field, $value ) );
 			} else {
+				// For enabled fields with no submission, reset arrays and clear scalars.
 				if ( ListingMeta::is_array_field( $field ) ) {
 					update_post_meta( $post_id, ListingMeta::key( $field ), array() );
 				} else {
