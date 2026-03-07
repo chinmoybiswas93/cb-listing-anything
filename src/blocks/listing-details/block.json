@@ -14,6 +14,14 @@
 	"style": "file:./style-index.css",
 	"viewScript": "file:./view.js",
 	"attributes": {
+		"template": {
+			"type": "string",
+			"default": "listing-details"
+		},
+		"inquiryButtonLink": {
+			"type": "string",
+			"default": ""
+		},
 		"showGallery": {
 			"type": "boolean",
 			"default": true

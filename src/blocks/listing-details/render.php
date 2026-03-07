@@ -24,7 +24,9 @@ if (! $post_id || 'cb_listing' !== get_post_type($post_id)) {
 	}
 }
 
-$post_obj = get_post($post_id);
+$post_obj   = get_post($post_id);
+$template   = isset($attributes['template']) ? $attributes['template'] : 'listing-details';
+$is_product = ($template === 'product-details');
 
 $show_gallery     = ! empty($attributes['showGallery']);
 $show_categories  = ! empty($attributes['showCategories']);
@@ -94,12 +96,68 @@ $has_socials = $facebook || $twitter || $instagram || $linkedin || $youtube;
 $currency_symbol = \CBListingAnything\Controllers\SettingsController::currency_symbol();
 
 $wrapper = get_block_wrapper_attributes(array(
-	'class' => 'cb-listing-single',
+	'class' => 'cb-listing-single' . ($is_product ? ' cb-listing-single--product-details' : ''),
 ));
 ?>
 <div <?php echo $wrapper; ?>>
-
-
+<?php if ($is_product) :
+	$back_url = wp_get_referer();
+	if ( ! $back_url ) {
+		$back_url = '';
+	}
+	$subtitle      = get_post_meta($post_id, '_listing_subtitle', true);
+	$description   = get_post_meta($post_id, '_listing_description', true);
+	$product_img_id = get_post_thumbnail_id($post_id);
+	$product_img_url = $product_img_id ? wp_get_attachment_image_url($product_img_id, 'large') : '';
+	$inquiry_link  = isset($attributes['inquiryButtonLink']) && $attributes['inquiryButtonLink'] !== '' ? $attributes['inquiryButtonLink'] : '';
+	$inquiry_url   = $inquiry_link !== '' ? $inquiry_link : ($email ? 'mailto:' . esc_attr($email) : '#');
+	?>
+	<div class="cb-listing-single__product-row">
+		<div class="cb-listing-single__product-image">
+			<?php if ($product_img_url) :
+				$img_alt = $product_img_id ? get_post_meta($product_img_id, '_wp_attachment_image_alt', true) : '';
+			?>
+				<div class="cb-listing-single__product-image-inner">
+					<img src="<?php echo esc_url($product_img_url); ?>" alt="<?php echo esc_attr($img_alt ?: get_the_title($post_id)); ?>" loading="eager" />
+				</div>
+			<?php else : ?>
+				<div class="cb-listing-single__product-image-placeholder"></div>
+			<?php endif; ?>
+		</div>
+		<div class="cb-listing-single__product-info">
+			<a href="<?php echo $back_url ? esc_url($back_url) : '#'; ?>" class="cb-listing-single__product-back" aria-label="<?php esc_attr_e('Go back', 'cb-listing-anything'); ?>"<?php if ( ! $back_url ) : ?> onclick="event.preventDefault(); history.back();"<?php endif; ?>>
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+				<?php esc_html_e('Back', 'cb-listing-anything'); ?>
+			</a>
+			<?php if ($subtitle) : ?>
+				<p class="cb-listing-single__product-subtitle"><?php echo esc_html($subtitle); ?></p>
+			<?php endif; ?>
+			<h1 class="cb-listing-single__product-title"><?php echo esc_html(get_the_title($post_id)); ?></h1>
+			<?php if ($description) : ?>
+				<h2 class="cb-listing-single__product-desc-heading"><?php esc_html_e('Description', 'cb-listing-anything'); ?></h2>
+				<div class="cb-listing-single__product-desc-content">
+					<?php echo apply_filters('the_content', $description); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				</div>
+				<hr class="cb-listing-single__product-desc-rule" />
+			<?php endif; ?>
+			<div class="cb-listing-single__product-cta-wrap">
+				<a href="<?php echo esc_url($inquiry_url); ?>" class="cb-listing-single__product-inquiry-btn">
+					<?php esc_html_e('Product Inquiry', 'cb-listing-anything'); ?>
+					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+				</a>
+			</div>
+		</div>
+	</div>
+	<?php if ($post_obj->post_content) : ?>
+		<div class="cb-listing-single__product-more-info">
+			<h2 class="cb-listing-single__product-more-info-title"><?php esc_html_e('More Information', 'cb-listing-anything'); ?></h2>
+			<hr class="cb-listing-single__product-more-info-rule" />
+		</div>
+		<div class="cb-listing-single__product-content">
+			<?php echo apply_filters('the_content', $post_obj->post_content); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+		</div>
+	<?php endif; ?>
+<?php else : ?>
 	<div class="cb-listing-single__layout">
 
 		<div class="cb-listing-single__left">
@@ -365,4 +423,5 @@ $wrapper = get_block_wrapper_attributes(array(
 		</aside>
 
 	</div>
+<?php endif; ?>
 </div>
