@@ -23,6 +23,7 @@ $defaults   = array(
 	'showCategoryTabs'        => false,
 	'showSubcategoryButtons'   => false,
 	'showEmptyCategories'      => false,
+	'cardTemplate'             => 'listing-card',
 );
 $attrs      = array_merge( $defaults, is_array( $attributes ) ? $attributes : array() );
 
@@ -270,6 +271,8 @@ $show_tags        = ! empty( $attrs['showTags'] );
 $show_address     = ! empty( $attrs['showAddress'] );
 $show_call_button = ! empty( $attrs['showCallButton'] );
 
+$card_template = isset( $attrs['cardTemplate'] ) && $attrs['cardTemplate'] === 'product-card' ? 'product-card' : 'listing-card';
+
 $show_filter_sidebar = ! empty( $attrs['showFilterSidebar'] ) && ( ! empty( $attrs['showFilterCategory'] ) || ! empty( $attrs['showFilterTag'] ) || ! empty( $attrs['showFilterPrice'] ) );
 $wrapper_class = 'cb-listings-archive' . ( $show_filter_sidebar ? '' : ' cb-listings-archive--no-sidebar' );
 $wrapper = get_block_wrapper_attributes( array( 'class' => $wrapper_class ) );
@@ -415,11 +418,23 @@ $is_all_archive = ! $is_category_archive && ! $is_tag_archive;
 			<?php endif; ?>
 
 			<?php if ( $query->have_posts() ) : ?>
-				<div class="cb-listings-archive__grid cb-listing-cards cb-listing-cols-<?php echo esc_attr( (string) $columns ); ?>">
+				<?php
+				$grid_class = 'cb-listings-archive__grid cb-listing-cols-' . esc_attr( (string) $columns );
+				if ( $card_template === 'product-card' ) {
+					$grid_class .= ' cb-listings-archive__grid--product-cards';
+				} else {
+					$grid_class .= ' cb-listing-cards';
+				}
+				?>
+				<div class="<?php echo $grid_class; ?>">
 					<?php
 					while ( $query->have_posts() ) {
 						$query->the_post();
-						include CB_LISTING_ANYTHING_PLUGIN_DIR . 'src/Views/partials/listing-card.php';
+						if ( $card_template === 'product-card' ) {
+							include CB_LISTING_ANYTHING_PLUGIN_DIR . 'src/Views/partials/product-card.php';
+						} else {
+							include CB_LISTING_ANYTHING_PLUGIN_DIR . 'src/Views/partials/listing-card.php';
+						}
 					}
 					wp_reset_postdata();
 					?>

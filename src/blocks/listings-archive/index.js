@@ -34,6 +34,7 @@ registerBlockType( metadata.name, {
 			showCategoryTabs,
 			showSubcategoryButtons,
 			showEmptyCategories,
+			cardTemplate = 'listing-card',
 			postsPerPage,
 			columns,
 			orderBy,
@@ -129,6 +130,18 @@ registerBlockType( metadata.name, {
 							onChange={ ( value ) => setAttributes( { showSorting: value } ) }
 						/>
 					</PanelBody>
+					<PanelBody title={ __( 'Card template', 'cb-listing-anything' ) }>
+						<SelectControl
+							label={ __( 'Card template', 'cb-listing-anything' ) }
+							value={ cardTemplate }
+							options={ [
+								{ label: __( 'Listing Card', 'cb-listing-anything' ), value: 'listing-card' },
+								{ label: __( 'Product Card', 'cb-listing-anything' ), value: 'product-card' },
+							] }
+							onChange={ ( value ) => setAttributes( { cardTemplate: value || 'listing-card' } ) }
+						/>
+					</PanelBody>
+					{ cardTemplate === 'listing-card' && (
 					<PanelBody title={ __( 'Card elements', 'cb-listing-anything' ) }>
 						{ cardOptions.showCategories && (
 							<ToggleControl
@@ -173,6 +186,7 @@ registerBlockType( metadata.name, {
 							/>
 						) }
 					</PanelBody>
+					) }
 				</InspectorControls>
 				<div { ...blockProps }>
 					<ServerSideRender

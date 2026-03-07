@@ -444,6 +444,106 @@
 	border: none;
 }
 
+/* Product Card template: image box, subtitle, title, hover View Details button */
+.cb-listings-archive .cb-product-card {
+	background: var(--wp--preset--color--background, #fff);
+	border-radius: 10px;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+}
+
+.cb-listings-archive .cb-product-card__image {
+	position: relative;
+	width: 100%;
+	min-height: 200px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	a:first-of-type {
+		display: block;
+		width: 100%;
+		line-height: 0;
+	}
+
+	img {
+		width: 100%;
+		height: auto;
+		display: block;
+		box-sizing: border-box;
+		object-fit: contain;
+		object-position: center;
+		border: 1px solid var(--wp--preset--color--border, #e2e8f0);
+		border-radius: 1.5rem;
+		transition: transform 0.3s ease;
+	}
+
+	.cb-product-card:hover & img {
+		transform: scale(1.02);
+	}
+}
+
+.cb-listings-archive .cb-product-card__image .cb-product-card__placeholder {
+	display: block;
+	width: 100%;
+	min-height: 200px;
+	box-sizing: border-box;
+	background: linear-gradient(135deg, #e0e0e0, #f5f5f5);
+	border: 1px solid var(--wp--preset--color--border, #e2e8f0);
+	border-radius: 1.5rem;
+}
+
+.cb-listings-archive .cb-product-card__btn {
+	position: absolute;
+	bottom: 0.75rem;
+	left: 0.75rem;
+	right: 0.75rem;
+	display: block;
+	text-align: center;
+	padding: 0.6rem 1rem;
+	background: var(--wp--preset--color--secondary, #0f766e);
+	color: var(--wp--preset--color--background, #fff);
+	text-decoration: none;
+	font-size: 0.9rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	border-radius: 9999px;
+	opacity: 0;
+	transition: opacity 0.25s ease;
+}
+
+.cb-listings-archive .cb-product-card:hover .cb-product-card__btn {
+	opacity: 1;
+}
+
+.cb-listings-archive .cb-product-card__subtitle {
+	margin: 0.75rem 1rem 0;
+	font-size: 0.9rem;
+	color: var(--wp--preset--color--foreground-light, #4a5568);
+	line-height: 1.4;
+	text-align: center;
+}
+
+.cb-listings-archive .cb-product-card__title {
+	margin: 0.5rem 1rem 1rem;
+	font-size: 1.35rem;
+	font-weight: 700;
+	line-height: 1.3;
+	text-align: center;
+
+	a {
+		color: var(--wp--preset--color--foreground, #1a1a2e);
+		text-decoration: none;
+		transition: color 0.2s ease;
+	}
+
+	a:hover {
+		color: var(--wp--preset--color--secondary, #0f766e);
+	}
+}
+
 /* Reuse listing card styles inside this block so cards display correctly when only archive block is used */
 .cb-listings-archive .cb-listing-card {
 	background: #fff;

@@ -31,7 +31,8 @@
 		"showCallButton": { "type": "boolean", "default": true },
 		"showCategoryTabs": { "type": "boolean", "default": false },
 		"showSubcategoryButtons": { "type": "boolean", "default": false },
-		"showEmptyCategories": { "type": "boolean", "default": false }
+		"showEmptyCategories": { "type": "boolean", "default": false },
+		"cardTemplate": { "type": "string", "default": "listing-card" }
 	},
 	"supports": { "html": false, "align": ["wide", "full"] },
 	"render": "file:./render.php"
