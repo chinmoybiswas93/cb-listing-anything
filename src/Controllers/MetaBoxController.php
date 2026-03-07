@@ -5,7 +5,6 @@ namespace CBListingAnything\Controllers;
 use CBListingAnything\Config\PostType as PostTypeConfig;
 use CBListingAnything\Core\AbstractController;
 use CBListingAnything\Models\ListingMeta;
-use WP_Post;
 
 class MetaBoxController extends AbstractController {
 

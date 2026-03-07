@@ -34,6 +34,25 @@ class ListingMeta extends AbstractModel {
 	}
 
 	/**
+	 * Get supported field types (single source of truth for meta field types).
+	 *
+	 * @return array<string, array{label: string, description?: string}>
+	 */
+	public static function supported_field_types() {
+		return ListingMetaConfig::supported_field_types();
+	}
+
+	/**
+	 * Get human-readable label for a field type slug.
+	 *
+	 * @param string $type_slug Type key (e.g. text, email, rich_text).
+	 * @return string
+	 */
+	public static function get_type_label( $type_slug ) {
+		return ListingMetaConfig::get_type_label( $type_slug );
+	}
+
+	/**
 	 * Get fields grouped by category.
 	 *
 	 * @return array<string, array{label: string, fields: array<string, array{label: string, category: string}>}>

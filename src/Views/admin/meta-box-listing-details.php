@@ -20,6 +20,7 @@ if ( ! isset( $enabled_fields ) || ! is_array( $enabled_fields ) || empty( $enab
 	<?php if (
 		in_array( 'listing_price', $enabled_fields, true ) ||
 		in_array( 'listing_location', $enabled_fields, true ) ||
+		in_array( 'listing_subtitle', $enabled_fields, true ) ||
 		in_array( 'listing_description', $enabled_fields, true )
 	) : ?>
 		<h3 class="cb-listing-meta-box__section"><?php esc_html_e( 'General', 'cb-listing-anything' ); ?></h3>
@@ -37,6 +38,14 @@ if ( ! isset( $enabled_fields ) || ! is_array( $enabled_fields ) || empty( $enab
 				</div>
 			<?php endif; ?>
 		</div>
+		<?php if ( in_array( 'listing_subtitle', $enabled_fields, true ) ) : ?>
+			<div class="cb-listing-meta-box__row cb-listing-meta-box__row--full">
+				<div class="cb-listing-meta-box__field">
+					<label for="listing_subtitle"><?php esc_html_e( 'Subtitle', 'cb-listing-anything' ); ?></label>
+					<input type="text" id="listing_subtitle" name="listing_subtitle" value="<?php echo esc_attr( $values['listing_subtitle'] ); ?>" placeholder="<?php esc_attr_e( 'e.g., Short tagline or subtitle', 'cb-listing-anything' ); ?>" />
+				</div>
+			</div>
+		<?php endif; ?>
 		<?php if ( in_array( 'listing_description', $enabled_fields, true ) ) : ?>
 			<div class="cb-listing-meta-box__row cb-listing-meta-box__row--full">
 				<div class="cb-listing-meta-box__field">

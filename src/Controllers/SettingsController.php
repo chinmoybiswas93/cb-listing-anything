@@ -440,36 +440,7 @@ class SettingsController extends AbstractController {
 									<span class="cb-listing-field-main">
 										<span class="cb-listing-field-label"><?php echo esc_html( $field_label ); ?></span>
 										<span class="cb-listing-field-meta">
-											<?php
-											// Human-readable type label.
-											switch ( $field_type ) {
-												case 'email':
-													$type_label = __( 'Email field', 'cb-listing-anything' );
-													break;
-												case 'tel':
-													$type_label = __( 'Phone field', 'cb-listing-anything' );
-													break;
-												case 'url':
-													$type_label = __( 'URL field', 'cb-listing-anything' );
-													break;
-												case 'time':
-													$type_label = __( 'Time field', 'cb-listing-anything' );
-													break;
-												case 'checkbox_group':
-													$type_label = __( 'Checkbox group', 'cb-listing-anything' );
-													break;
-												case 'media_gallery':
-													$type_label = __( 'Media gallery', 'cb-listing-anything' );
-													break;
-												case 'rich_text':
-													$type_label = __( 'Rich text editor', 'cb-listing-anything' );
-													break;
-												default:
-													$type_label = __( 'Text field', 'cb-listing-anything' );
-													break;
-											}
-											echo esc_html( $type_label );
-											?>
+											<?php echo esc_html( ListingMetaModel::get_type_label( $field_type ) ); ?>
 										</span>
 									</span>
 								</label>
