@@ -14,9 +14,12 @@
 	"style": "file:./style-index.css",
 	"attributes": {
 		"align": { "type": "string", "default": "wide" },
+		"showFilterSidebar": { "type": "boolean", "default": true },
 		"showFilterCategory": { "type": "boolean", "default": true },
 		"showFilterTag": { "type": "boolean", "default": true },
 		"showFilterPrice": { "type": "boolean", "default": true },
+		"showProductCount": { "type": "boolean", "default": true },
+		"showSorting": { "type": "boolean", "default": true },
 		"postsPerPage": { "type": "number", "default": 12 },
 		"columns": { "type": "number", "default": 3 },
 		"orderBy": { "type": "string", "default": "date" },
@@ -25,7 +28,10 @@
 		"showPrice": { "type": "boolean", "default": true },
 		"showTags": { "type": "boolean", "default": true },
 		"showAddress": { "type": "boolean", "default": true },
-		"showCallButton": { "type": "boolean", "default": true }
+		"showCallButton": { "type": "boolean", "default": true },
+		"showCategoryTabs": { "type": "boolean", "default": false },
+		"showSubcategoryButtons": { "type": "boolean", "default": false },
+		"showEmptyCategories": { "type": "boolean", "default": false }
 	},
 	"supports": { "html": false, "align": ["wide", "full"] },
 	"render": "file:./render.php"

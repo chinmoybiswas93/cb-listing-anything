@@ -5,9 +5,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $attributes = isset( $attributes ) && is_array( $attributes ) ? $attributes : array();
 $defaults   = array(
-	'showFilterCategory' => true,
+	'showFilterSidebar'   => true,
+	'showFilterCategory'  => true,
 	'showFilterTag'       => true,
 	'showFilterPrice'     => true,
+	'showProductCount'    => true,
+	'showSorting'         => true,
 	'postsPerPage'        => 12,
 	'columns'             => 3,
 	'orderBy'             => 'date',
@@ -15,8 +18,11 @@ $defaults   = array(
 	'showOpenStatus'      => true,
 	'showPrice'           => true,
 	'showTags'            => true,
-	'showAddress'         => true,
-	'showCallButton'      => true,
+	'showAddress'             => true,
+	'showCallButton'          => true,
+	'showCategoryTabs'        => false,
+	'showSubcategoryButtons'   => false,
+	'showEmptyCategories'      => false,
 );
 $attrs      = array_merge( $defaults, is_array( $attributes ) ? $attributes : array() );
 
@@ -42,6 +48,46 @@ if ( is_tax( 'cb_listing_category' ) ) {
 } elseif ( is_tax( 'cb_listing_tag' ) ) {
 	$current_term = get_queried_object();
 	$is_tag_archive = true;
+}
+
+// Category tabs / subcategory buttons: load terms and resolve parent/children
+$parent_terms       = array();
+$current_parent     = null;
+$subcategory_terms   = array();
+$all_tab_url        = get_post_type_archive_link( 'cb_listing' );
+if ( ! empty( $attrs['showCategoryTabs'] ) ) {
+	$hide_empty_cats = empty( $attrs['showEmptyCategories'] );
+	$all_cat_terms = get_terms( array(
+		'taxonomy'   => 'cb_listing_category',
+		'hide_empty' => $hide_empty_cats,
+		'orderby'    => 'term_id',
+		'order'      => 'ASC',
+	) );
+	if ( ! is_wp_error( $all_cat_terms ) && ! empty( $all_cat_terms ) ) {
+		$parent_terms = array_filter( $all_cat_terms, function( $t ) { return 0 === (int) $t->parent; } );
+	}
+	if ( $is_category_archive && $current_term ) {
+		if ( 0 === (int) $current_term->parent ) {
+			$current_parent = $current_term;
+		} else {
+			$current_parent = get_term( (int) $current_term->parent, 'cb_listing_category' );
+			if ( is_wp_error( $current_parent ) || ! $current_parent ) {
+				$current_parent = $current_term;
+			}
+		}
+		if ( $current_parent && ! empty( $attrs['showSubcategoryButtons'] ) ) {
+			$subcategory_terms = get_terms( array(
+				'taxonomy'   => 'cb_listing_category',
+				'parent'     => $current_parent->term_id,
+				'hide_empty' => $hide_empty_cats,
+				'orderby'    => 'term_id',
+				'order'      => 'ASC',
+			) );
+			if ( is_wp_error( $subcategory_terms ) ) {
+				$subcategory_terms = array();
+			}
+		}
+	}
 }
 
 // Get filter values from URL, or use current term if on taxonomy archive
@@ -224,11 +270,66 @@ $show_tags        = ! empty( $attrs['showTags'] );
 $show_address     = ! empty( $attrs['showAddress'] );
 $show_call_button = ! empty( $attrs['showCallButton'] );
 
-$wrapper = get_block_wrapper_attributes( array( 'class' => 'cb-listings-archive' ) );
+$show_filter_sidebar = ! empty( $attrs['showFilterSidebar'] ) && ( ! empty( $attrs['showFilterCategory'] ) || ! empty( $attrs['showFilterTag'] ) || ! empty( $attrs['showFilterPrice'] ) );
+$wrapper_class = 'cb-listings-archive' . ( $show_filter_sidebar ? '' : ' cb-listings-archive--no-sidebar' );
+$wrapper = get_block_wrapper_attributes( array( 'class' => $wrapper_class ) );
+
+$show_category_tabs = ! empty( $attrs['showCategoryTabs'] );
+$show_subcategory_buttons = ! empty( $attrs['showSubcategoryButtons'] );
+$is_all_archive = ! $is_category_archive && ! $is_tag_archive;
 ?>
 <div <?php echo $wrapper; ?>>
+	<?php if ( $show_category_tabs ) : ?>
+	<div class="cb-listings-archive__category-nav">
+		<nav class="cb-listings-archive__category-tabs" aria-label="<?php esc_attr_e( 'Listing categories', 'cb-listing-anything' ); ?>">
+			<ul class="cb-listings-archive__category-tabs-list">
+				<li class="cb-listings-archive__category-tab-item">
+					<a href="<?php echo esc_url( $all_tab_url ); ?>" class="cb-listings-archive__category-tab <?php echo $is_all_archive ? ' cb-listings-archive__category-tab--active' : ''; ?>"><?php esc_html_e( 'All', 'cb-listing-anything' ); ?></a>
+				</li>
+				<?php foreach ( $parent_terms as $parent_term ) :
+					$term_link = get_term_link( $parent_term );
+					if ( is_wp_error( $term_link ) ) {
+						continue;
+					}
+					$is_active = $is_category_archive && $current_parent && (int) $current_parent->term_id === (int) $parent_term->term_id;
+				?>
+				<li class="cb-listings-archive__category-tab-item">
+					<a href="<?php echo esc_url( $term_link ); ?>" class="cb-listings-archive__category-tab<?php echo $is_active ? ' cb-listings-archive__category-tab--active' : ''; ?>"><?php echo esc_html( $parent_term->name ); ?></a>
+				</li>
+				<?php endforeach; ?>
+			</ul>
+		</nav>
+		<?php if ( $show_subcategory_buttons && $is_category_archive && $current_parent && ! empty( $subcategory_terms ) ) : ?>
+		<nav class="cb-listings-archive__subcategory-buttons" aria-label="<?php esc_attr_e( 'Subcategories', 'cb-listing-anything' ); ?>">
+			<ul class="cb-listings-archive__subcategory-buttons-list">
+				<?php
+				$parent_link = get_term_link( $current_parent );
+				$is_parent_active = $current_term && (int) $current_term->term_id === (int) $current_parent->term_id;
+				if ( ! is_wp_error( $parent_link ) ) :
+				?>
+				<li class="cb-listings-archive__subcategory-btn-item">
+					<a href="<?php echo esc_url( $parent_link ); ?>" class="cb-listings-archive__subcategory-btn<?php echo $is_parent_active ? ' cb-listings-archive__subcategory-btn--active' : ''; ?>"><?php esc_html_e( 'All', 'cb-listing-anything' ); ?></a>
+				</li>
+				<?php endif; ?>
+				<?php foreach ( $subcategory_terms as $child_term ) :
+					$child_link = get_term_link( $child_term );
+					if ( is_wp_error( $child_link ) ) {
+						continue;
+					}
+					$is_child_active = $current_term && (int) $current_term->term_id === (int) $child_term->term_id;
+				?>
+				<li class="cb-listings-archive__subcategory-btn-item">
+					<a href="<?php echo esc_url( $child_link ); ?>" class="cb-listings-archive__subcategory-btn<?php echo $is_child_active ? ' cb-listings-archive__subcategory-btn--active' : ''; ?>"><?php echo esc_html( $child_term->name ); ?></a>
+				</li>
+				<?php endforeach; ?>
+			</ul>
+		</nav>
+		<?php endif; ?>
+	</div>
+	<?php endif; ?>
 	<div class="cb-listings-archive__inner">
-		<?php if ( ! empty( $attrs['showFilterTag'] ) || ! empty( $attrs['showFilterPrice'] ) ) : ?>
+		<?php if ( $show_filter_sidebar ) :
+		?>
 		<aside class="cb-listings-archive__filters">
 			<div class="cb-listings-archive__filters-header">
 				<h3 class="cb-listings-archive__filters-title"><?php esc_html_e( 'Filters', 'cb-listing-anything' ); ?></h3>
@@ -278,8 +379,17 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => 'cb-listings-archive'
 		</aside>
 		<?php endif; ?>
 
-		<div class="cb-listings-archive__main">
+		<?php
+			$show_count   = ! empty( $attrs['showProductCount'] );
+			$show_sort    = ! empty( $attrs['showSorting'] );
+			$show_top_bar = $show_count || $show_sort;
+			$main_class   = 'cb-listings-archive__main' . ( $show_top_bar ? '' : ' cb-listings-archive__main--no-top-bar' );
+		?>
+		<div class="<?php echo esc_attr( $main_class ); ?>">
+			<?php if ( $show_top_bar ) :
+			?>
 			<div class="cb-listings-archive__top-bar">
+				<?php if ( $show_count ) : ?>
 				<span class="cb-listings-archive__count">
 					<?php
 					printf(
@@ -289,6 +399,8 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => 'cb-listings-archive'
 					);
 					?>
 				</span>
+				<?php endif; ?>
+				<?php if ( $show_sort ) : ?>
 				<form method="get" action="<?php echo esc_url( $form_action ); ?>" class="cb-listings-archive__sort-form">
 					<label for="cb-listings-archive-orderby" class="cb-listings-archive__sort-label"><?php esc_html_e( 'Sort By', 'cb-listing-anything' ); ?></label>
 					<select name="orderby" id="cb-listings-archive-orderby" class="cb-listings-archive__sort-select">
@@ -298,7 +410,9 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => 'cb-listings-archive'
 						<option value="price_desc" <?php selected( $orderby, 'price_desc' ); ?>><?php esc_html_e( 'Price high–low', 'cb-listing-anything' ); ?></option>
 					</select>
 				</form>
+				<?php endif; ?>
 			</div>
+			<?php endif; ?>
 
 			<?php if ( $query->have_posts() ) : ?>
 				<div class="cb-listings-archive__grid cb-listing-cards cb-listing-cols-<?php echo esc_attr( (string) $columns ); ?>">

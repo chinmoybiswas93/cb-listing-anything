@@ -11,10 +11,158 @@
 	align-items: start;
 }
 
+.cb-listings-archive--no-sidebar .cb-listings-archive__inner {
+	grid-template-columns: 1fr;
+}
+
 @media (max-width: 768px) {
 	.cb-listings-archive__inner {
 		grid-template-columns: 1fr;
 		gap: 1.5rem;
+	}
+}
+
+.cb-listings-archive__category-nav {
+	margin-bottom: 1.5rem;
+}
+
+.cb-listings-archive__category-tabs {
+	border-bottom: 1px solid var(--wp--preset--color--border, #e2e8f0);
+}
+
+.cb-listings-archive__category-tabs-list {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	gap: 0 1.5rem;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.cb-listings-archive__category-tab-item {
+	margin: 0;
+}
+
+.cb-listings-archive__category-tab {
+	display: inline-block;
+	padding: 0.75rem 0;
+	margin-bottom: -1px;
+	color: var(--wp--preset--color--foreground-light, #4a5568);
+	text-decoration: none;
+	font-size: 1.125rem;
+	font-weight: 500;
+	border-bottom: 2px solid transparent;
+	transition: color 0.2s ease, border-color 0.2s ease;
+
+	&:hover {
+		color: var(--wp--preset--color--primary, #1e40af);
+	}
+
+	&--active {
+		color: var(--wp--preset--color--secondary, #0f766e);
+		border-bottom-color: currentColor;
+	}
+}
+
+@media (max-width: 768px) {
+	.cb-listings-archive__category-tabs {
+		border-bottom: none;
+	}
+
+	.cb-listings-archive__category-tabs-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0;
+		justify-content: stretch;
+		border: 1px solid var(--wp--preset--color--border, #e2e8f0);
+		border-radius: 6px;
+		overflow: hidden;
+	}
+
+	.cb-listings-archive__category-tab-item {
+		flex: 1 1 auto;
+		min-width: 0;
+		border: 1px solid var(--wp--preset--color--border, #e2e8f0);
+		margin: -1px 0 0 -1px;
+		background: var(--wp--preset--color--background, #ffffff);
+	}
+
+	.cb-listings-archive__category-tab {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 2.5rem;
+		padding: 0.5rem 0.6rem;
+		margin-bottom: 0;
+		text-align: center;
+		border: none;
+		border-bottom: 3px solid transparent;
+		box-sizing: border-box;
+		width: 100%;
+		font-size: 0.95rem;
+
+		&--active {
+			border-bottom-color: var(--wp--preset--color--secondary, #0f766e);
+		}
+	}
+}
+
+.cb-listings-archive__subcategory-buttons {
+	margin-top: 1.25rem;
+}
+
+.cb-listings-archive__subcategory-buttons-list {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.cb-listings-archive__subcategory-btn-item {
+	margin: 0;
+}
+
+.cb-listings-archive__subcategory-btn {
+	display: inline-block;
+	padding: 0.4rem 1rem;
+	border-radius: 9999px;
+	border: 1px solid var(--wp--preset--color--border, #e2e8f0);
+	background: var(--wp--preset--color--background, #ffffff);
+	color: var(--wp--preset--color--foreground, #1a1a2e);
+	text-decoration: none;
+	font-size: 0.95rem;
+	font-weight: 500;
+	transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+
+	&:hover {
+		border-color: var(--wp--preset--color--primary, #1e40af);
+		color: var(--wp--preset--color--primary, #1e40af);
+	}
+
+	&--active {
+		background: var(--wp--preset--color--secondary, #0f766e);
+		border-color: var(--wp--preset--color--secondary, #0f766e);
+		color: var(--wp--preset--color--background, #ffffff);
+	}
+}
+
+@media (max-width: 768px) {
+	.cb-listings-archive__subcategory-buttons {
+		margin-top: 0.75rem;
+	}
+
+	.cb-listings-archive__subcategory-buttons-list {
+		gap: 0.4rem;
+	}
+
+	.cb-listings-archive__subcategory-btn {
+		padding: 0.35rem 0.75rem;
+		font-size: 0.9rem;
 	}
 }
 
@@ -173,6 +321,16 @@
 	min-width: 0;
 }
 
+.cb-listings-archive__main--no-top-bar {
+	margin-top: 0;
+	padding-top: 0;
+}
+
+.cb-listings-archive__main--no-top-bar > .cb-listings-archive__grid,
+.cb-listings-archive__main--no-top-bar > .cb-listings-archive__empty {
+	margin-top: 0;
+}
+
 .cb-listings-archive__top-bar {
 	display: flex;
 	align-items: center;
@@ -210,7 +368,6 @@
 .cb-listings-archive__grid {
 	display: grid;
 	gap: 1.5rem;
-	margin-bottom: 2rem;
 	width: 100%;
 	box-sizing: border-box;
 }

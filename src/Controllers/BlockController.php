@@ -5,6 +5,8 @@ namespace CBListingAnything\Controllers;
 use CBListingAnything\Config\PostType as PostTypeConfig;
 use CBListingAnything\Config\Taxonomies as TaxonomiesConfig;
 use CBListingAnything\Core\AbstractController;
+use CBListingAnything\Models\ListingMeta as ListingMetaModel;
+use CBListingAnything\Controllers\SettingsController;
 
 class BlockController extends AbstractController {
 
@@ -98,12 +100,11 @@ class BlockController extends AbstractController {
 	}
 
 	/**
-	 * Provide taxonomy data to block editor script.
+	 * Provide taxonomy and enabled-fields data to block editor (for listings-card and listings-archive).
 	 *
 	 * @return void
 	 */
-	public function localize_block_data()
-	{
+	public function localize_block_data() {
 		$terms = get_terms(
 			array(
 				'taxonomy'   => TaxonomiesConfig::CATEGORY_TAXONOMY,
@@ -113,13 +114,13 @@ class BlockController extends AbstractController {
 
 		$options = array(
 			array(
-				'label' => __('All Categories', 'cb-listing-anything'),
+				'label' => __( 'All Categories', 'cb-listing-anything' ),
 				'value' => 0,
 			),
 		);
 
-		if (! is_wp_error($terms) && ! empty($terms)) {
-			foreach ($terms as $term) {
+		if ( ! is_wp_error( $terms ) && ! empty( $terms ) ) {
+			foreach ( $terms as $term ) {
 				$options[] = array(
 					'label' => $term->name,
 					'value' => $term->term_id,
@@ -127,9 +128,20 @@ class BlockController extends AbstractController {
 			}
 		}
 
+		$enabled_fields = ListingMetaModel::normalize_enabled_fields(
+			SettingsController::get( 'enabled_fields', null )
+		);
+
+		$data = array(
+			'categories'     => $options,
+			'enabledFields'   => array_values( $enabled_fields ),
+		);
+
+		wp_register_script( 'cb-listing-anything-editor-data', false, array(), CB_LISTING_ANYTHING_VERSION, false );
+		wp_enqueue_script( 'cb-listing-anything-editor-data' );
 		wp_add_inline_script(
-			'cb-listing-anything-listings-card-editor-script',
-			'window.cbListingAnythingData = ' . wp_json_encode(array('categories' => $options)) . ';',
+			'cb-listing-anything-editor-data',
+			'window.cbListingAnythingData = ' . wp_json_encode( $data ) . ';',
 			'before'
 		);
 	}
