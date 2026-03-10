@@ -105,12 +105,77 @@ $wrapper = get_block_wrapper_attributes(array(
 	if ( ! $back_url ) {
 		$back_url = '';
 	}
+	$use_inquiry_query        = ! empty($attributes['useInquiryQuery']);
+	$inquiry_query_source     = isset($attributes['inquiryQuerySource']) ? $attributes['inquiryQuerySource'] : 'id';
+	$inquiry_query_param_name = isset($attributes['inquiryQueryParam']) && $attributes['inquiryQueryParam'] !== '' ? $attributes['inquiryQueryParam'] : 'product';
+	$inquiry_new_window       = ! empty($attributes['inquiryOpenInNewWindow']);
 	$subtitle      = get_post_meta($post_id, '_listing_subtitle', true);
 	$description   = get_post_meta($post_id, '_listing_description', true);
 	$product_img_id = get_post_thumbnail_id($post_id);
 	$product_img_url = $product_img_id ? wp_get_attachment_image_url($product_img_id, 'large') : '';
 	$inquiry_link  = isset($attributes['inquiryButtonLink']) && $attributes['inquiryButtonLink'] !== '' ? $attributes['inquiryButtonLink'] : '';
 	$inquiry_url   = $inquiry_link !== '' ? $inquiry_link : ($email ? 'mailto:' . esc_attr($email) : '#');
+
+	if ($use_inquiry_query && $inquiry_url && '#' !== $inquiry_url) {
+		$query_value = ($inquiry_query_source === 'title') ? get_the_title($post_id) : (string) $post_id;
+		$query_value = (string) $query_value;
+
+		if ('' !== $query_value && '' !== $inquiry_query_param_name) {
+			$parsed_url   = wp_parse_url($inquiry_url);
+			$scheme_host  = '';
+			$path         = '';
+			$query        = '';
+			$fragment     = '';
+
+			if (! empty($parsed_url['scheme'])) {
+				$scheme_host .= $parsed_url['scheme'] . '://';
+			}
+			if (! empty($parsed_url['user'])) {
+				$scheme_host .= $parsed_url['user'];
+				if (! empty($parsed_url['pass'])) {
+					$scheme_host .= ':' . $parsed_url['pass'];
+				}
+				$scheme_host .= '@';
+			}
+			if (! empty($parsed_url['host'])) {
+				$scheme_host .= $parsed_url['host'];
+			}
+			if (! empty($parsed_url['port'])) {
+				$scheme_host .= ':' . $parsed_url['port'];
+			}
+
+			if (! empty($parsed_url['path'])) {
+				$path = $parsed_url['path'];
+			}
+			if (! empty($parsed_url['query'])) {
+				$query = $parsed_url['query'];
+			}
+			if (! empty($parsed_url['fragment'])) {
+				$fragment = $parsed_url['fragment'];
+			}
+
+			$new_param = rawurlencode($inquiry_query_param_name) . '=' . rawurlencode($query_value);
+			if ('' !== $query) {
+				$query .= '&' . $new_param;
+			} else {
+				$query = $new_param;
+			}
+
+			$rebuilt = '';
+			if ('' !== $scheme_host) {
+				$rebuilt .= $scheme_host;
+			}
+			$rebuilt .= $path;
+			if ('' !== $query) {
+				$rebuilt .= '?' . $query;
+			}
+			if ('' !== $fragment) {
+				$rebuilt .= '#' . $fragment;
+			}
+
+			$inquiry_url = $rebuilt;
+		}
+	}
 	?>
 	<div class="cb-listing-single__product-row">
 		<div class="cb-listing-single__product-image">
@@ -141,7 +206,7 @@ $wrapper = get_block_wrapper_attributes(array(
 				<hr class="cb-listing-single__product-desc-rule" />
 			<?php endif; ?>
 			<div class="cb-listing-single__product-cta-wrap">
-				<a href="<?php echo esc_url($inquiry_url); ?>" class="cb-listing-single__product-inquiry-btn">
+				<a href="<?php echo esc_url($inquiry_url); ?>" class="cb-listing-single__product-inquiry-btn"<?php echo $inquiry_new_window ? ' target="_blank" rel="noopener noreferrer"' : ''; ?>>
 					<?php esc_html_e('Product Inquiry', 'cb-listing-anything'); ?>
 					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
 				</a>

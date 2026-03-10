@@ -65,6 +65,22 @@
 		"showPrice": {
 			"type": "boolean",
 			"default": true
+		},
+		"useInquiryQuery": {
+			"type": "boolean",
+			"default": false
+		},
+		"inquiryQuerySource": {
+			"type": "string",
+			"default": "id"
+		},
+		"inquiryQueryParam": {
+			"type": "string",
+			"default": "product"
+		},
+		"inquiryOpenInNewWindow": {
+			"type": "boolean",
+			"default": false
 		}
 	},
 	"supports": {

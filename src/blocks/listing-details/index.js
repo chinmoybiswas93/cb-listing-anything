@@ -23,6 +23,10 @@ registerBlockType( metadata.name, {
 			showSocials,
 			showHours,
 			showPrice,
+			useInquiryQuery,
+			inquiryQuerySource,
+			inquiryQueryParam,
+			inquiryOpenInNewWindow,
 		} = attributes;
 
 		const blockProps = useBlockProps();
@@ -43,12 +47,44 @@ registerBlockType( metadata.name, {
 							onChange={ ( value ) => setAttributes( { template: value } ) }
 						/>
 						{ isProductDetails && (
-							<TextControl
-								label={ __( 'Inquiry button link', 'cb-listing-anything' ) }
-								value={ inquiryButtonLink ?? '' }
-								onChange={ ( value ) => setAttributes( { inquiryButtonLink: value || '' } ) }
-								help={ __( 'URL for the Product Inquiry button (e.g. contact page or mailto:). Leave empty to use the listing contact email.', 'cb-listing-anything' ) }
-							/>
+							<>
+								<TextControl
+									label={ __( 'Inquiry button link', 'cb-listing-anything' ) }
+									value={ inquiryButtonLink ?? '' }
+									onChange={ ( value ) => setAttributes( { inquiryButtonLink: value || '' } ) }
+									help={ __( 'URL for the Product Inquiry button (e.g. contact page or mailto:). Leave empty to use the listing contact email.', 'cb-listing-anything' ) }
+								/>
+								<ToggleControl
+									label={ __( 'Append product info as query parameter', 'cb-listing-anything' ) }
+									checked={ !! useInquiryQuery }
+									onChange={ ( value ) => setAttributes( { useInquiryQuery: value } ) }
+									help={ __( 'When enabled, adds a query parameter to the inquiry link with the product title or ID.', 'cb-listing-anything' ) }
+								/>
+								{ useInquiryQuery && (
+									<>
+										<SelectControl
+											label={ __( 'Query value source', 'cb-listing-anything' ) }
+											value={ inquiryQuerySource || 'id' }
+											options={ [
+												{ label: __( 'Product ID', 'cb-listing-anything' ), value: 'id' },
+												{ label: __( 'Product title', 'cb-listing-anything' ), value: 'title' },
+											] }
+											onChange={ ( value ) => setAttributes( { inquiryQuerySource: value || 'id' } ) }
+										/>
+										<TextControl
+											label={ __( 'Query parameter name', 'cb-listing-anything' ) }
+											value={ inquiryQueryParam ?? 'product' }
+											onChange={ ( value ) => setAttributes( { inquiryQueryParam: value || 'product' } ) }
+											help={ __( 'Name of the query parameter that will carry the product info (e.g. product, item, ref).', 'cb-listing-anything' ) }
+										/>
+									</>
+								) }
+								<ToggleControl
+									label={ __( 'Open inquiry link in new window', 'cb-listing-anything' ) }
+									checked={ !! inquiryOpenInNewWindow }
+									onChange={ ( value ) => setAttributes( { inquiryOpenInNewWindow: value } ) }
+								/>
+							</>
 						) }
 					</PanelBody>
 					{ isListingDetails && (
