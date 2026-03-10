@@ -372,22 +372,24 @@
 	box-sizing: border-box;
 }
 
-.cb-listings-archive__grid.cb-listing-cols-1 { grid-template-columns: 1fr; }
-.cb-listings-archive__grid.cb-listing-cols-2 { grid-template-columns: repeat(2, 1fr); }
-.cb-listings-archive__grid.cb-listing-cols-3 { grid-template-columns: repeat(3, 1fr); }
-.cb-listings-archive__grid.cb-listing-cols-4 { grid-template-columns: repeat(4, 1fr); }
+/* Desktop (default) */
+.cb-listings-archive__grid.cb-listing-cols-d-1 { grid-template-columns: 1fr; }
+.cb-listings-archive__grid.cb-listing-cols-d-2 { grid-template-columns: repeat(2, 1fr); }
+.cb-listings-archive__grid.cb-listing-cols-d-3 { grid-template-columns: repeat(3, 1fr); }
+.cb-listings-archive__grid.cb-listing-cols-d-4 { grid-template-columns: repeat(4, 1fr); }
 
 @media (max-width: 1024px) {
-	.cb-listings-archive__grid.cb-listing-cols-4 { grid-template-columns: repeat(3, 1fr); }
+	.cb-listings-archive__grid.cb-listing-cols-t-1 { grid-template-columns: 1fr; }
+	.cb-listings-archive__grid.cb-listing-cols-t-2 { grid-template-columns: repeat(2, 1fr); }
+	.cb-listings-archive__grid.cb-listing-cols-t-3 { grid-template-columns: repeat(3, 1fr); }
+	.cb-listings-archive__grid.cb-listing-cols-t-4 { grid-template-columns: repeat(4, 1fr); }
 }
 
 @media (max-width: 768px) {
-	.cb-listings-archive__grid.cb-listing-cols-3,
-	.cb-listings-archive__grid.cb-listing-cols-4 { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media (max-width: 480px) {
-	.cb-listings-archive__grid { grid-template-columns: 1fr !important; }
+	.cb-listings-archive__grid.cb-listing-cols-m-1 { grid-template-columns: 1fr; }
+	.cb-listings-archive__grid.cb-listing-cols-m-2 { grid-template-columns: repeat(2, 1fr); }
+	.cb-listings-archive__grid.cb-listing-cols-m-3 { grid-template-columns: repeat(3, 1fr); }
+	.cb-listings-archive__grid.cb-listing-cols-m-4 { grid-template-columns: repeat(4, 1fr); }
 }
 
 .cb-listings-archive__empty {
@@ -541,6 +543,12 @@
 
 	a:hover {
 		color: var(--wp--preset--color--secondary, #0f766e);
+	}
+}
+
+@media (max-width: 768px) {
+	.cb-listings-archive .cb-product-card__title {
+		font-size: 1.1rem;
 	}
 }
 

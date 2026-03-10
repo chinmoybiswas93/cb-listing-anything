@@ -37,6 +37,8 @@ registerBlockType( metadata.name, {
 			cardTemplate = 'listing-card',
 			postsPerPage,
 			columns,
+			columnsTablet,
+			columnsMobile,
 			orderBy,
 			showCategories,
 			showOpenStatus,
@@ -50,7 +52,8 @@ registerBlockType( metadata.name, {
 		const cardOptions = useEnabledFieldsForCard();
 
 		const orderByOptions = [
-			{ label: __( 'Newest', 'cb-listing-anything' ), value: 'date' },
+			{ label: __( 'Latest', 'cb-listing-anything' ), value: 'date' },
+			{ label: __( 'Oldest', 'cb-listing-anything' ), value: 'date_asc' },
 			{ label: __( 'Title A–Z', 'cb-listing-anything' ), value: 'title' },
 			{ label: __( 'Price low–high', 'cb-listing-anything' ), value: 'price_asc' },
 			{ label: __( 'Price high–low', 'cb-listing-anything' ), value: 'price_desc' },
@@ -107,9 +110,23 @@ registerBlockType( metadata.name, {
 							max={ 24 }
 						/>
 						<RangeControl
-							label={ __( 'Columns', 'cb-listing-anything' ) }
-							value={ columns }
+							label={ __( 'Columns (Desktop)', 'cb-listing-anything' ) }
+							value={ columns ?? 3 }
 							onChange={ ( value ) => setAttributes( { columns: value } ) }
+							min={ 1 }
+							max={ 4 }
+						/>
+						<RangeControl
+							label={ __( 'Columns (Tablet)', 'cb-listing-anything' ) }
+							value={ columnsTablet ?? 2 }
+							onChange={ ( value ) => setAttributes( { columnsTablet: value } ) }
+							min={ 1 }
+							max={ 4 }
+						/>
+						<RangeControl
+							label={ __( 'Columns (Mobile)', 'cb-listing-anything' ) }
+							value={ columnsMobile ?? 1 }
+							onChange={ ( value ) => setAttributes( { columnsMobile: value } ) }
 							min={ 1 }
 							max={ 4 }
 						/>

@@ -13,6 +13,8 @@ $defaults   = array(
 	'showSorting'         => true,
 	'postsPerPage'        => 12,
 	'columns'             => 3,
+	'columnsTablet'       => 2,
+	'columnsMobile'       => 1,
 	'orderBy'             => 'date',
 	'showCategories'      => true,
 	'showOpenStatus'      => true,
@@ -29,6 +31,8 @@ $attrs      = array_merge( $defaults, is_array( $attributes ) ? $attributes : ar
 
 $per_page = absint( $attrs['postsPerPage'] );
 $columns  = max( 1, min( 4, absint( $attrs['columns'] ) ) );
+$columns_tablet = max( 1, min( 4, absint( isset( $attrs['columnsTablet'] ) ? $attrs['columnsTablet'] : 2 ) ) );
+$columns_mobile = max( 1, min( 4, absint( isset( $attrs['columnsMobile'] ) ? $attrs['columnsMobile'] : 1 ) ) );
 $paged_get = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 0;
 if ( ! $paged_get && isset( $_GET['page'] ) ) {
 	$paged_get = absint( $_GET['page'] );
@@ -118,7 +122,7 @@ if ( $is_tag_archive && $current_term && empty( $filter_tag ) ) {
 $price_min = isset( $_GET['price_min'] ) ? absint( preg_replace( '/[^0-9]/', '', wp_unslash( $_GET['price_min'] ) ) ) : 0;
 $price_max = isset( $_GET['price_max'] ) ? absint( preg_replace( '/[^0-9]/', '', wp_unslash( $_GET['price_max'] ) ) ) : 0;
 $orderby   = isset( $_GET['orderby'] ) ? sanitize_key( $_GET['orderby'] ) : $attrs['orderBy'];
-$allowed   = array( 'date', 'title', 'price_asc', 'price_desc' );
+$allowed   = array( 'date', 'date_asc', 'title', 'price_asc', 'price_desc' );
 if ( ! in_array( $orderby, $allowed, true ) ) {
 	$orderby = 'date';
 }
@@ -181,6 +185,10 @@ if ( ! empty( $meta_clauses ) ) {
 }
 
 switch ( $orderby ) {
+	case 'date_asc':
+		$query_args['orderby'] = 'date';
+		$query_args['order']   = 'ASC';
+		break;
 	case 'title':
 		$query_args['orderby'] = 'title';
 		$query_args['order']   = 'ASC';
@@ -407,7 +415,8 @@ $is_all_archive = ! $is_category_archive && ! $is_tag_archive;
 				<form method="get" action="<?php echo esc_url( $form_action ); ?>" class="cb-listings-archive__sort-form">
 					<label for="cb-listings-archive-orderby" class="cb-listings-archive__sort-label"><?php esc_html_e( 'Sort By', 'cb-listing-anything' ); ?></label>
 					<select name="orderby" id="cb-listings-archive-orderby" class="cb-listings-archive__sort-select">
-						<option value="date" <?php selected( $orderby, 'date' ); ?>><?php esc_html_e( 'Newest', 'cb-listing-anything' ); ?></option>
+						<option value="date" <?php selected( $orderby, 'date' ); ?>><?php esc_html_e( 'Latest', 'cb-listing-anything' ); ?></option>
+						<option value="date_asc" <?php selected( $orderby, 'date_asc' ); ?>><?php esc_html_e( 'Oldest', 'cb-listing-anything' ); ?></option>
 						<option value="title" <?php selected( $orderby, 'title' ); ?>><?php esc_html_e( 'Title A–Z', 'cb-listing-anything' ); ?></option>
 						<option value="price_asc" <?php selected( $orderby, 'price_asc' ); ?>><?php esc_html_e( 'Price low–high', 'cb-listing-anything' ); ?></option>
 						<option value="price_desc" <?php selected( $orderby, 'price_desc' ); ?>><?php esc_html_e( 'Price high–low', 'cb-listing-anything' ); ?></option>
@@ -419,7 +428,7 @@ $is_all_archive = ! $is_category_archive && ! $is_tag_archive;
 
 			<?php if ( $query->have_posts() ) : ?>
 				<?php
-				$grid_class = 'cb-listings-archive__grid cb-listing-cols-' . esc_attr( (string) $columns );
+				$grid_class = 'cb-listings-archive__grid cb-listing-cols-d-' . (int) $columns . ' cb-listing-cols-t-' . (int) $columns_tablet . ' cb-listing-cols-m-' . (int) $columns_mobile;
 				if ( $card_template === 'product-card' ) {
 					$grid_class .= ' cb-listings-archive__grid--product-cards';
 				} else {
