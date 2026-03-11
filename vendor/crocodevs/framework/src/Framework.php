@@ -2,6 +2,8 @@
 
 namespace CrocoDevs;
 
+use CrocoDevs\Config\Config;
+use CrocoDevs\Http\Router\Router;
 use CrocoDevs\Support\ServiceProviderManager;
 
 /**
@@ -43,9 +45,21 @@ class Framework {
 
 		self::$appPath = rtrim( $pluginPath, '/\\' );
 
+		// Load configuration from framework and app config directories.
+		self::loadConfiguration();
+
+		// Allow providers to be passed explicitly or configured.
+		if ( empty( $providers ) ) {
+			$providers = (array) Config::get( 'app.providers', array() );
+		}
+
 		if ( ! empty( $providers ) ) {
 			ServiceProviderManager::register( $providers );
 			ServiceProviderManager::bootAll();
+		}
+
+		if ( Config::get( 'app.use_router', false ) ) {
+			add_action( 'rest_api_init', array( self::class, 'registerRoutes' ) );
 		}
 
 		self::$bootstrapped = true;
@@ -64,6 +78,18 @@ class Framework {
 		}
 
 		return self::$appPath . '/' . ltrim( $path, '/\\' );
+	}
+
+	/**
+	 * Get a configuration value.
+	 *
+	 * @param string $key
+	 * @param mixed  $default
+	 *
+	 * @return mixed
+	 */
+	public static function config( $key, $default = null ) {
+		return Config::get( $key, $default );
 	}
 
 	/**
@@ -102,5 +128,57 @@ class Framework {
 	 */
 	public static function isBootstrapped() {
 		return self::$bootstrapped;
+	}
+
+	/**
+	 * Load the plugin's routes file and register all router-defined routes.
+	 *
+	 * Hooked into rest_api_init when app.use_router is enabled.
+	 *
+	 * @return void
+	 */
+	public static function registerRoutes() {
+		$routesFile = self::appPath( 'routes/api.php' );
+
+		if ( file_exists( $routesFile ) ) {
+			Router::init();
+			require_once $routesFile;
+		}
+
+		Router::registerRoutes();
+	}
+
+	/**
+	 * Load configuration files from the framework and application.
+	 *
+	 * @return void
+	 */
+	protected static function loadConfiguration() {
+		$config = array();
+
+		$frameworkConfigPath = dirname( __DIR__ ) . '/config';
+		if ( is_dir( $frameworkConfigPath ) ) {
+			foreach ( glob( $frameworkConfigPath . '/*.php' ) as $file ) {
+				$name            = basename( $file, '.php' );
+				$config[ $name ] = require $file;
+			}
+		}
+
+		$appConfigPath = self::$appPath . '/config';
+		if ( is_dir( $appConfigPath ) ) {
+			foreach ( glob( $appConfigPath . '/*.php' ) as $file ) {
+				$name = basename( $file, '.php' );
+
+				$appConfig = require $file;
+
+				if ( isset( $config[ $name ] ) && is_array( $config[ $name ] ) && is_array( $appConfig ) ) {
+					$config[ $name ] = array_replace_recursive( $config[ $name ], $appConfig );
+				} else {
+					$config[ $name ] = $appConfig;
+				}
+			}
+		}
+
+		Config::set( $config );
 	}
 }

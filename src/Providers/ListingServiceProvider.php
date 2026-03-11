@@ -14,11 +14,19 @@ use CBListingAnything\Rest\TermController;
 use CrocoDevs\Container\ServiceManager;
 use CrocoDevs\Database\QueryBuilder;
 use CrocoDevs\Support\ServiceProvider;
+use CrocoDevs\Validation\Validator;
 
 /**
  * Wires CB Listing Anything services into the CrocoDevs container.
  */
 class ListingServiceProvider extends ServiceProvider {
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function hooks() {
+		return array( 'init' => 10 );
+	}
 
 	/**
 	 * {@inheritDoc}
@@ -62,6 +70,10 @@ class ListingServiceProvider extends ServiceProvider {
 
 		ServiceManager::register( 'cb.listing.query', function ( array $base_args = array() ) {
 			return QueryBuilder::make( $base_args );
+		} );
+
+		ServiceManager::singleton( 'crocodevs.validator', function () {
+			return new Validator();
 		} );
 	}
 }

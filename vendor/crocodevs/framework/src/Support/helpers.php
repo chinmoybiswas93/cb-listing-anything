@@ -7,8 +7,10 @@
  * @package CrocoDevs\Support
  */
 
+use CrocoDevs\Config\Config;
 use CrocoDevs\Framework;
 use CrocoDevs\Container\ServiceManager;
+use CrocoDevs\Validation\Validator;
 
 if ( ! function_exists( 'crocodevs_app_path' ) ) {
 	/**
@@ -60,5 +62,33 @@ if ( ! function_exists( 'crocodevs_resolve' ) ) {
 	 */
 	function crocodevs_resolve( $id, ...$args ) {
 		return ServiceManager::get( $id, ...$args );
+	}
+}
+
+if ( ! function_exists( 'crocodevs_config' ) ) {
+	/**
+	 * Get a configuration value from the CrocoDevs config repository.
+	 *
+	 * @param string $key
+	 * @param mixed  $default
+	 *
+	 * @return mixed
+	 */
+	function crocodevs_config( $key, $default = null ) {
+		return Config::get( $key, $default );
+	}
+}
+
+if ( ! function_exists( 'crocodevs_validate' ) ) {
+	/**
+	 * Validate data against a set of rules.
+	 *
+	 * @param array $data  Input data.
+	 * @param array $rules Validation rules.
+	 *
+	 * @return \CrocoDevs\Validation\ValidationResult
+	 */
+	function crocodevs_validate( array $data, array $rules ) {
+		return Validator::make( $data, $rules );
 	}
 }

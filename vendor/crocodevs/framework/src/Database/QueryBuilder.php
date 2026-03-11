@@ -140,6 +140,87 @@ class QueryBuilder {
 	}
 
 	/**
+	 * Add a BETWEEN meta query clause — useful for price/date ranges.
+	 *
+	 * @param string $key  Meta key.
+	 * @param mixed  $min  Minimum value.
+	 * @param mixed  $max  Maximum value.
+	 * @param string $type Compare type (NUMERIC, DECIMAL, DATE, etc.).
+	 *
+	 * @return $this
+	 */
+	public function whereMetaBetween( $key, $min, $max, $type = 'NUMERIC' ) {
+		if ( ! isset( $this->args['meta_query'] ) || ! is_array( $this->args['meta_query'] ) ) {
+			$this->args['meta_query'] = array();
+		}
+
+		$this->args['meta_query'][] = array(
+			'key'     => $key,
+			'value'   => array( $min, $max ),
+			'compare' => 'BETWEEN',
+			'type'    => $type,
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Filter by multiple author IDs.
+	 *
+	 * @param int[] $ids
+	 *
+	 * @return $this
+	 */
+	public function whereAuthorIn( array $ids ) {
+		$this->args['author__in'] = array_map( 'intval', $ids );
+
+		return $this;
+	}
+
+	/**
+	 * Exclude posts by specific author IDs.
+	 *
+	 * @param int[] $ids
+	 *
+	 * @return $this
+	 */
+	public function whereAuthorNotIn( array $ids ) {
+		$this->args['author__not_in'] = array_map( 'intval', $ids );
+
+		return $this;
+	}
+
+	/**
+	 * Filter by date range.
+	 *
+	 * @param array $date_query A WP_Date_Query-compatible array.
+	 *
+	 * @return $this
+	 */
+	public function dateQuery( array $date_query ) {
+		$this->args['date_query'] = $date_query;
+
+		return $this;
+	}
+
+	/**
+	 * Order by a meta value.
+	 *
+	 * @param string $meta_key
+	 * @param string $order
+	 * @param string $type     NUMERIC, DECIMAL, DATE, etc.
+	 *
+	 * @return $this
+	 */
+	public function orderByMeta( $meta_key, $order = 'DESC', $type = 'NUMERIC' ) {
+		$this->args['meta_key']  = $meta_key;
+		$this->args['orderby']   = 'meta_value_num' === $type ? 'meta_value_num' : 'meta_value';
+		$this->args['order']     = $order;
+
+		return $this;
+	}
+
+	/**
 	 * Set ordering.
 	 *
 	 * @param string $orderby

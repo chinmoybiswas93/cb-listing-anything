@@ -6,6 +6,8 @@ use CBListingAnything\Config\PostType as PostTypeConfig;
 use CBListingAnything\Config\Taxonomies as TaxonomiesConfig;
 use CBListingAnything\Controllers\SettingsController;
 use CrocoDevs\Database\QueryBuilder;
+use CrocoDevs\Http\Response;
+use CrocoDevs\Validation\Validator;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -43,8 +45,20 @@ class SearchController extends AbstractRestController {
 	 * @return WP_REST_Response
 	 */
 	public function search_listings( WP_REST_Request $request ) {
-		$keyword  = $request->get_param( 'keyword' );
-		$category = $request->get_param( 'category' );
+		$data = $request->get_params();
+
+		$validation = Validator::make( $data, array(
+			'keyword'  => 'nullable|string|max:200',
+			'category' => 'nullable|integer',
+		) );
+
+		if ( $validation->fails() ) {
+			return Response::validationError( $validation->errors() );
+		}
+
+		$validated = $validation->validated();
+		$keyword   = isset( $validated['keyword'] ) ? $validated['keyword'] : '';
+		$category  = isset( $validated['category'] ) ? $validated['category'] : 0;
 
 		if ( empty( $keyword ) && empty( $category ) ) {
 			return new WP_REST_Response( array(), 200 );

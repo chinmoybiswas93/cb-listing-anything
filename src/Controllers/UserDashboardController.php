@@ -5,6 +5,7 @@ namespace CBListingAnything\Controllers;
 use CBListingAnything\Config\PostType as PostTypeConfig;
 use CBListingAnything\Config\Taxonomies as TaxonomiesConfig;
 use CBListingAnything\Models\ListingMeta;
+use CrocoDevs\Validation\Validator;
 
 /**
  * Handles all non-rendering logic for the user dashboard block:
@@ -151,33 +152,41 @@ class UserDashboardController {
 			return self::build_result( $errors, '', '', '', 0, array(), '', 0, '', self::empty_meta( $meta_field_keys ), $editing_post_id );
 		}
 
-		$form_title       = isset( $_POST['cb_listing_title'] ) ? sanitize_text_field( wp_unslash( $_POST['cb_listing_title'] ) ) : '';
-		$form_content     = isset( $_POST['cb_listing_content'] ) ? wp_kses_post( wp_unslash( $_POST['cb_listing_content'] ) ) : '';
-		$form_category_id = isset( $_POST['cb_listing_category'] ) ? absint( $_POST['cb_listing_category'] ) : 0;
-		$form_tag_ids     = isset( $_POST['cb_listing_tags'] ) && is_array( $_POST['cb_listing_tags'] ) ? array_map( 'absint', wp_unslash( $_POST['cb_listing_tags'] ) ) : array();
-		$form_tags_other  = isset( $_POST['cb_listing_tags_other'] ) ? sanitize_text_field( wp_unslash( $_POST['cb_listing_tags_other'] ) ) : '';
-		$form_featured_id = isset( $_POST['cb_listing_featured_image_id'] ) ? absint( wp_unslash( $_POST['cb_listing_featured_image_id'] ) ) : 0;
+		$data = self::extract_form_data( $meta_field_keys );
 		// phpcs:enable
+
+		$validation = Validator::make( $data, self::submission_rules() );
+
+		if ( $validation->fails() ) {
+			$flat_errors = array();
+			foreach ( $validation->errors() as $field_errors ) {
+				foreach ( $field_errors as $msg ) {
+					$flat_errors[] = $msg;
+				}
+			}
+
+			return self::build_result(
+				$flat_errors, '', $data['cb_listing_title'], $data['cb_listing_content'],
+				$data['cb_listing_category'], $data['cb_listing_tags'], $data['cb_listing_tags_other'],
+				$data['cb_listing_featured_image_id'], $data['listing_price'],
+				$data['_meta'], $editing_post_id
+			);
+		}
+
+		$form_title       = sanitize_text_field( $data['cb_listing_title'] );
+		$form_content     = wp_kses_post( $data['cb_listing_content'] );
+		$form_category_id = absint( $data['cb_listing_category'] );
+		$form_tag_ids     = is_array( $data['cb_listing_tags'] ) ? array_map( 'absint', $data['cb_listing_tags'] ) : array();
+		$form_tags_other  = sanitize_text_field( $data['cb_listing_tags_other'] );
+		$form_featured_id = absint( $data['cb_listing_featured_image_id'] );
 
 		$form_meta = array();
 		foreach ( $meta_field_keys as $field_key ) {
-			if ( 'listing_working_days' === $field_key ) {
-				$raw_value = isset( $_POST['listing_working_days'] ) && is_array( $_POST['listing_working_days'] ) ? wp_unslash( $_POST['listing_working_days'] ) : array(); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			} elseif ( isset( $_POST[ $field_key ] ) ) {
-				$raw_value = wp_unslash( $_POST[ $field_key ] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			} elseif ( 'listing_price' === $field_key && isset( $_POST['cb_listing_price'] ) ) {
-				$raw_value = wp_unslash( $_POST['cb_listing_price'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			} else {
-				$raw_value = ListingMeta::is_array_field( $field_key ) ? array() : '';
-			}
+			$raw_value = isset( $data['_meta'][ $field_key ] ) ? $data['_meta'][ $field_key ] : ( ListingMeta::is_array_field( $field_key ) ? array() : '' );
 			$form_meta[ $field_key ] = ListingMeta::sanitize( $field_key, $raw_value );
 		}
 
 		$form_price = isset( $form_meta['listing_price'] ) ? $form_meta['listing_price'] : '';
-
-		if ( '' === $form_title ) {
-			$errors[] = __( 'Please enter a title for your listing.', 'cb-listing-anything' );
-		}
 
 		$form_tag_ids = self::process_other_tags( $form_tag_ids, $form_tags_other );
 
@@ -245,6 +254,71 @@ class UserDashboardController {
 		$form_price = isset( $form_meta['listing_price'] ) ? $form_meta['listing_price'] : '';
 
 		return self::build_result( array(), '', $form_title, $form_content, $form_category_id, $form_tag_ids, '', $form_featured_id, $form_price, $form_meta, $editing_post_id );
+	}
+
+	// ------------------------------------------------------------------
+	// Validation rules & data extraction
+	// ------------------------------------------------------------------
+
+	/**
+	 * Validation rules for the add/edit listing form.
+	 *
+	 * @return array<string, string>
+	 */
+	private static function submission_rules() {
+		return array(
+			'cb_listing_title'             => 'required|string|max:200',
+			'cb_listing_content'           => 'nullable|string',
+			'cb_listing_category'          => 'nullable|integer',
+			'cb_listing_tags'              => 'nullable|array',
+			'cb_listing_tags_other'        => 'nullable|string|max:500',
+			'cb_listing_featured_image_id' => 'nullable|integer',
+			'listing_price'                => 'nullable|string|max:50',
+			'listing_contact_email'        => 'nullable|email',
+			'listing_website'              => 'nullable|url',
+			'listing_contact_phone'        => 'nullable|string|max:30',
+		);
+	}
+
+	/**
+	 * Extract and structure form data from $_POST for validation.
+	 *
+	 * @param array $meta_field_keys
+	 *
+	 * @return array
+	 */
+	private static function extract_form_data( array $meta_field_keys ) {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		$data = array(
+			'cb_listing_title'             => isset( $_POST['cb_listing_title'] ) ? wp_unslash( $_POST['cb_listing_title'] ) : '',
+			'cb_listing_content'           => isset( $_POST['cb_listing_content'] ) ? wp_unslash( $_POST['cb_listing_content'] ) : '',
+			'cb_listing_category'          => isset( $_POST['cb_listing_category'] ) ? absint( $_POST['cb_listing_category'] ) : 0,
+			'cb_listing_tags'              => isset( $_POST['cb_listing_tags'] ) && is_array( $_POST['cb_listing_tags'] ) ? array_map( 'absint', wp_unslash( $_POST['cb_listing_tags'] ) ) : array(),
+			'cb_listing_tags_other'        => isset( $_POST['cb_listing_tags_other'] ) ? wp_unslash( $_POST['cb_listing_tags_other'] ) : '',
+			'cb_listing_featured_image_id' => isset( $_POST['cb_listing_featured_image_id'] ) ? absint( wp_unslash( $_POST['cb_listing_featured_image_id'] ) ) : 0,
+		);
+
+		$meta = array();
+		foreach ( $meta_field_keys as $field_key ) {
+			if ( 'listing_working_days' === $field_key ) {
+				$meta[ $field_key ] = isset( $_POST['listing_working_days'] ) && is_array( $_POST['listing_working_days'] ) ? wp_unslash( $_POST['listing_working_days'] ) : array();
+			} elseif ( isset( $_POST[ $field_key ] ) ) {
+				$meta[ $field_key ] = wp_unslash( $_POST[ $field_key ] );
+			} elseif ( 'listing_price' === $field_key && isset( $_POST['cb_listing_price'] ) ) {
+				$meta[ $field_key ] = wp_unslash( $_POST['cb_listing_price'] );
+			} else {
+				$meta[ $field_key ] = ListingMeta::is_array_field( $field_key ) ? array() : '';
+			}
+		}
+		// phpcs:enable
+
+		$data['listing_price']         = isset( $meta['listing_price'] ) ? $meta['listing_price'] : '';
+		$data['listing_contact_email'] = isset( $meta['listing_contact_email'] ) ? $meta['listing_contact_email'] : '';
+		$data['listing_website']       = isset( $meta['listing_website'] ) ? $meta['listing_website'] : '';
+		$data['listing_contact_phone'] = isset( $meta['listing_contact_phone'] ) ? $meta['listing_contact_phone'] : '';
+		$data['_meta']                 = $meta;
+
+		return $data;
 	}
 
 	// ------------------------------------------------------------------

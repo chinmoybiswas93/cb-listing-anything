@@ -26,4 +26,16 @@ abstract class ServiceProvider {
 	 */
 	public function boot() {
 	}
+
+	/**
+	 * WordPress hooks that trigger this provider's registration.
+	 *
+	 * Return an associative array of hook_name => priority.
+	 * Return an empty array to register immediately (no deferred hook).
+	 *
+	 * @return array<string, int>
+	 */
+	public function hooks() {
+		return array();
+	}
 }
