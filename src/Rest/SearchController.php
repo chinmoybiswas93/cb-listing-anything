@@ -5,10 +5,11 @@ namespace CBListingAnything\Rest;
 use CBListingAnything\Config\PostType as PostTypeConfig;
 use CBListingAnything\Config\Taxonomies as TaxonomiesConfig;
 use CBListingAnything\Controllers\SettingsController;
+use CrocoDevs\Database\QueryBuilder;
 use WP_REST_Request;
 use WP_REST_Response;
 
-class SearchController {
+class SearchController extends AbstractRestController {
 
 	/**
 	 * Register REST routes.
@@ -16,7 +17,7 @@ class SearchController {
 	 * @return void
 	 */
 	public function register_routes() {
-		register_rest_route( 'cb-listing-anything/v1', '/search', array(
+		register_rest_route( $this->rest_namespace(), '/search', array(
 			'methods'             => 'GET',
 			'callback'            => array( $this, 'search_listings' ),
 			'permission_callback' => '__return_true',
@@ -49,27 +50,14 @@ class SearchController {
 			return new WP_REST_Response( array(), 200 );
 		}
 
-		$args = array(
-			'post_type'      => PostTypeConfig::POST_TYPE,
-			'post_status'    => 'publish',
-			'posts_per_page' => 8,
-		);
+		$query = QueryBuilder::make()
+			->postType( PostTypeConfig::POST_TYPE )
+			->status( 'publish' )
+			->perPage( 8 )
+			->whenKeyword( (string) $keyword )
+			->whenTax( TaxonomiesConfig::CATEGORY_TAXONOMY, 'term_id', $category )
+			->get();
 
-		if ( ! empty( $keyword ) ) {
-			$args['s'] = $keyword;
-		}
-
-		if ( ! empty( $category ) ) {
-			$args['tax_query'] = array(
-				array(
-					'taxonomy' => TaxonomiesConfig::CATEGORY_TAXONOMY,
-					'field'    => 'term_id',
-					'terms'    => $category,
-				),
-			);
-		}
-
-		$query   = new \WP_Query( $args );
 		$results = array();
 
 		if ( $query->have_posts() ) {

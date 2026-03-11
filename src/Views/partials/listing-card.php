@@ -4,23 +4,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 $card_post_id = get_the_ID();
-$price        = get_post_meta( $card_post_id, '_listing_price', true );
-$location     = get_post_meta( $card_post_id, '_listing_location', true );
-$phone        = get_post_meta( $card_post_id, '_listing_contact_phone', true );
-$opening_time = get_post_meta( $card_post_id, '_listing_opening_time', true );
-$closing_time = get_post_meta( $card_post_id, '_listing_closing_time', true );
-$working_days = get_post_meta( $card_post_id, '_listing_working_days', true );
-$categories   = get_the_terms( $card_post_id, 'cb_listing_category' );
-$tags         = get_the_terms( $card_post_id, 'cb_listing_tag' );
-
-$is_open = false;
-if ( $opening_time && $closing_time && is_array( $working_days ) ) {
-	$current_day  = strtolower( wp_date( 'l' ) );
-	$current_time = wp_date( 'H:i' );
-	if ( in_array( $current_day, $working_days, true ) && $current_time >= $opening_time && $current_time <= $closing_time ) {
-		$is_open = true;
-	}
-}
+$_meta        = \CBListingAnything\Helpers\ListingHelper::get_listing_meta( $card_post_id );
+$price        = $_meta['price'];
+$location     = $_meta['location'];
+$phone        = $_meta['phone'];
+$opening_time = $_meta['opening_time'];
+$closing_time = $_meta['closing_time'];
+$working_days = $_meta['working_days'];
+$categories   = get_the_terms( $card_post_id, \CBListingAnything\Config\Taxonomies::CATEGORY_TAXONOMY );
+$tags         = get_the_terms( $card_post_id, \CBListingAnything\Config\Taxonomies::TAG_TAXONOMY );
+$is_open      = \CBListingAnything\Helpers\ListingHelper::is_open( $card_post_id, $opening_time, $closing_time, $working_days );
 ?>
 <article class="cb-listing-card">
 	<div class="cb-listing-card__image">

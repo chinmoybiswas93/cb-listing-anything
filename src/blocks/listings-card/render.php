@@ -16,26 +16,20 @@ $show_call_button  = isset( $attributes['showCallButton'] ) ? $attributes['showC
 
 if ( $use_current_query && ! ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) {
 	global $wp_query;
-	$args  = array_merge( $wp_query->query_vars, array(
-		'post_type'      => 'cb_listing',
-		'posts_per_page' => $per_page,
-		'post_status'    => 'publish',
-	) );
-	$query = new WP_Query( $args );
+	$query = \CrocoDevs\Database\QueryBuilder::make( $wp_query->query_vars )
+		->postType( \CBListingAnything\Config\PostType::POST_TYPE )
+		->perPage( $per_page )
+		->status( 'publish' )
+		->get();
 } else {
-	$args = array(
-		'post_type'      => 'cb_listing',
-		'posts_per_page' => $per_page,
-		'post_status'    => 'publish',
-	);
+	$builder = \CrocoDevs\Database\QueryBuilder::make()
+		->postType( \CBListingAnything\Config\PostType::POST_TYPE )
+		->perPage( $per_page )
+		->status( 'publish' );
 	if ( ! $use_current_query && $category_filter > 0 ) {
-		$args['tax_query'] = array( array(
-			'taxonomy' => 'cb_listing_category',
-			'field'    => 'term_id',
-			'terms'    => $category_filter,
-		) );
+		$builder->whenTax( \CBListingAnything\Config\Taxonomies::CATEGORY_TAXONOMY, 'term_id', $category_filter );
 	}
-	$query = new WP_Query( $args );
+	$query = $builder->get();
 }
 
 if ( ! $query->have_posts() ) {
@@ -49,6 +43,6 @@ $wrapper = get_block_wrapper_attributes( array(
 ?>
 <div <?php echo $wrapper; ?>>
 	<?php while ( $query->have_posts() ) : $query->the_post();
-		include CB_LISTING_ANYTHING_PLUGIN_DIR . 'src/Views/partials/listing-card.php';
+		include crocodevs_view_path( 'partials/listing-card' );
 	endwhile; wp_reset_postdata(); ?>
 </div>

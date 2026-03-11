@@ -13,7 +13,7 @@ $selected_category_ids  = isset( $attributes['selectedCategoryIds'] ) && is_arra
 $selected_category_ids  = array_filter( $selected_category_ids );
 
 $get_terms_args = array(
-	'taxonomy'   => 'cb_listing_category',
+	'taxonomy'   => \CBListingAnything\Config\Taxonomies::CATEGORY_TAXONOMY,
 	'hide_empty' => true,
 	'orderby'    => 'name',
 	'order'      => 'ASC',
@@ -85,13 +85,14 @@ $wrapper = get_block_wrapper_attributes( array(
 					continue;
 				}
 				$img_url = '';
-				$q       = new WP_Query( array(
-					'post_type'      => 'cb_listing',
-					'post_status'    => 'publish',
-					'posts_per_page' => 1,
-					'tax_query'      => array( array( 'taxonomy' => 'cb_listing_category', 'field' => 'term_id', 'terms' => $term->term_id ) ),
-					'fields'         => 'ids',
-				) );
+			$q = \CrocoDevs\Database\QueryBuilder::make()
+				->postType( \CBListingAnything\Config\PostType::POST_TYPE )
+				->status( 'publish' )
+				->perPage( 1 )
+				->whenTax( \CBListingAnything\Config\Taxonomies::CATEGORY_TAXONOMY, 'term_id', $term->term_id )
+				->fields( 'ids' )
+				->noFoundRows()
+				->get();
 				if ( $q->have_posts() ) {
 					$pid = $q->posts[0];
 					$img_url = get_the_post_thumbnail_url( $pid, 'medium_large' );

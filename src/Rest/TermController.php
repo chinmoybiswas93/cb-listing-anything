@@ -6,7 +6,7 @@ use CBListingAnything\Config\Taxonomies as TaxonomiesConfig;
 use WP_REST_Request;
 use WP_REST_Response;
 
-class TermController {
+class TermController extends AbstractRestController {
 
 	/**
 	 * Register REST routes.
@@ -14,7 +14,7 @@ class TermController {
 	 * @return void
 	 */
 	public function register_routes() {
-		register_rest_route( 'cb-listing-anything/v1', '/categories', array(
+		register_rest_route( $this->rest_namespace(), '/categories', array(
 			'methods'             => 'GET',
 			'callback'            => array( $this, 'get_categories' ),
 			'permission_callback' => '__return_true',

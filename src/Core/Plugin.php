@@ -11,6 +11,7 @@ use CBListingAnything\Controllers\SettingsController;
 use CBListingAnything\Controllers\TaxonomyController;
 use CBListingAnything\Rest\SearchController as RestSearchController;
 use CBListingAnything\Rest\TermController as RestTermController;
+use CrocoDevs\Container\ServiceManager;
 
 class Plugin {
 
@@ -91,15 +92,15 @@ class Plugin {
 	 * Plugin constructor.
 	 */
 	private function __construct() {
-		$this->post_type_controller      = new PostTypeController();
-		$this->taxonomy_controller       = new TaxonomyController();
-		$this->meta_box_controller       = new MetaBoxController();
-		$this->block_controller          = new BlockController();
-		$this->settings_controller       = new SettingsController();
-		$this->category_image_controller = new CategoryImageController();
-		$this->media_controller          = new MediaController();
-		$this->rest_search_controller    = new RestSearchController();
-		$this->rest_term_controller      = new RestTermController();
+		$this->post_type_controller      = ServiceManager::get( 'cb.listing.post_type_controller' ) ?: new PostTypeController();
+		$this->taxonomy_controller       = ServiceManager::get( 'cb.listing.taxonomy_controller' ) ?: new TaxonomyController();
+		$this->meta_box_controller       = ServiceManager::get( 'cb.listing.meta_box_controller' ) ?: new MetaBoxController();
+		$this->block_controller          = ServiceManager::get( 'cb.listing.block_controller' ) ?: new BlockController();
+		$this->settings_controller       = ServiceManager::get( 'cb.listing.settings_controller' ) ?: new SettingsController();
+		$this->category_image_controller = ServiceManager::get( 'cb.listing.category_image_controller' ) ?: new CategoryImageController();
+		$this->media_controller          = ServiceManager::get( 'cb.listing.media_controller' ) ?: new MediaController();
+		$this->rest_search_controller    = ServiceManager::get( 'cb.listing.rest.search_controller' ) ?: new RestSearchController();
+		$this->rest_term_controller      = ServiceManager::get( 'cb.listing.rest.term_controller' ) ?: new RestTermController();
 	}
 
 	/**
@@ -141,8 +142,6 @@ class Plugin {
 	}
 
 	/**
-	 * Get the post type controller.
-	 *
 	 * @return PostTypeController
 	 */
 	public function get_post_type_controller() {
@@ -150,8 +149,6 @@ class Plugin {
 	}
 
 	/**
-	 * Get the taxonomy controller.
-	 *
 	 * @return TaxonomyController
 	 */
 	public function get_taxonomy_controller() {
@@ -159,8 +156,6 @@ class Plugin {
 	}
 
 	/**
-	 * Get the meta box controller.
-	 *
 	 * @return MetaBoxController
 	 */
 	public function get_meta_box_controller() {
@@ -168,8 +163,6 @@ class Plugin {
 	}
 
 	/**
-	 * Get the block controller.
-	 *
 	 * @return BlockController
 	 */
 	public function get_block_controller() {
@@ -177,8 +170,6 @@ class Plugin {
 	}
 
 	/**
-	 * Get the settings controller.
-	 *
 	 * @return SettingsController
 	 */
 	public function get_settings_controller() {
@@ -186,8 +177,6 @@ class Plugin {
 	}
 
 	/**
-	 * Get the category image controller.
-	 *
 	 * @return CategoryImageController
 	 */
 	public function get_category_image_controller() {

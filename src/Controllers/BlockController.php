@@ -33,7 +33,7 @@ class BlockController extends AbstractController {
 		$blocks = array( 'listings-card', 'listing-details', 'related-listings', 'listing-search', 'categories-slider', 'listings-archive', 'listing-breadcrumb', 'listing-cards-slider', 'listing-user-dashboard' );
 
 		foreach ( $blocks as $block ) {
-			$block_dir = CB_LISTING_ANYTHING_PLUGIN_DIR . 'build/' . $block;
+			$block_dir = crocodevs_app_path( 'build/' . $block );
 
 			if ( file_exists( $block_dir . '/block.json' ) ) {
 				register_block_type( $block_dir );

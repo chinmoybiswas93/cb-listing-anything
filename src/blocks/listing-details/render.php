@@ -5,21 +5,12 @@ if (! defined('ABSPATH')) {
 
 $post_id = isset($block->context['postId']) ? absint($block->context['postId']) : get_the_ID();
 
-if (! $post_id || 'cb_listing' !== get_post_type($post_id)) {
-	if (defined('REST_REQUEST') && REST_REQUEST) {
-		$preview = get_posts(array(
-			'post_type'      => 'cb_listing',
-			'posts_per_page' => 1,
-			'post_status'    => 'publish',
-		));
-
-		if (empty($preview)) {
+if (! $post_id || \CBListingAnything\Config\PostType::POST_TYPE !== get_post_type($post_id)) {
+	$post_id = \CBListingAnything\Helpers\ListingHelper::get_preview_post_id();
+	if (! $post_id) {
+		if (defined('REST_REQUEST') && REST_REQUEST) {
 			echo '<p>' . esc_html__('No listings found for preview.', 'cb-listing-anything') . '</p>';
-			return;
 		}
-
-		$post_id = $preview[0]->ID;
-	} else {
 		return;
 	}
 }
@@ -40,56 +31,33 @@ $show_socials     = ! empty($attributes['showSocials']);
 $show_hours       = ! empty($attributes['showHours']);
 $show_price       = ! empty($attributes['showPrice']);
 
-$price        = get_post_meta($post_id, '_listing_price', true);
-$address      = get_post_meta($post_id, '_listing_address', true);
-$city         = get_post_meta($post_id, '_listing_city', true);
-$state        = get_post_meta($post_id, '_listing_state', true);
-$zip          = get_post_meta($post_id, '_listing_zip_code', true);
-$country      = get_post_meta($post_id, '_listing_country', true);
-$email        = get_post_meta($post_id, '_listing_contact_email', true);
-$phone        = get_post_meta($post_id, '_listing_contact_phone', true);
-$website      = get_post_meta($post_id, '_listing_website', true);
-$facebook     = get_post_meta($post_id, '_listing_social_facebook', true);
-$twitter      = get_post_meta($post_id, '_listing_social_twitter', true);
-$instagram    = get_post_meta($post_id, '_listing_social_instagram', true);
-$linkedin     = get_post_meta($post_id, '_listing_social_linkedin', true);
-$youtube      = get_post_meta($post_id, '_listing_social_youtube', true);
-$opening_time = get_post_meta($post_id, '_listing_opening_time', true);
-$closing_time = get_post_meta($post_id, '_listing_closing_time', true);
-$working_days = get_post_meta($post_id, '_listing_working_days', true);
-$gallery_raw  = get_post_meta($post_id, '_listing_gallery', true);
+$_meta = \CBListingAnything\Helpers\ListingHelper::get_listing_meta($post_id);
+$price        = $_meta['price'];
+$address      = $_meta['address'];
+$city         = $_meta['city'];
+$state        = $_meta['state'];
+$zip          = $_meta['zip'];
+$country      = $_meta['country'];
+$email        = $_meta['email'];
+$phone        = $_meta['phone'];
+$website      = $_meta['website'];
+$facebook     = $_meta['facebook'];
+$twitter      = $_meta['twitter'];
+$instagram    = $_meta['instagram'];
+$linkedin     = $_meta['linkedin'];
+$youtube      = $_meta['youtube'];
+$opening_time = $_meta['opening_time'];
+$closing_time = $_meta['closing_time'];
+$working_days = $_meta['working_days'];
 
-$gallery_ids = array();
-if ($gallery_raw) {
-	$gallery_ids = array_filter(array_map('absint', explode(',', $gallery_raw)));
-}
+$gallery_ids  = \CBListingAnything\Helpers\ListingHelper::parse_gallery_ids($_meta['gallery']);
+$all_images   = \CBListingAnything\Helpers\ListingHelper::build_image_list($post_id, $gallery_ids);
+$full_address = \CBListingAnything\Helpers\ListingHelper::build_full_address($post_id, $address, $city, $state, $zip, $country);
+$maps_url     = $full_address ? 'https://www.google.com/maps/search/' . rawurlencode($full_address) : '';
+$is_open      = \CBListingAnything\Helpers\ListingHelper::is_open($post_id, $opening_time, $closing_time, $working_days);
 
-$featured_id = get_post_thumbnail_id($post_id);
-$all_images  = array();
-if ($featured_id) {
-	$all_images[] = $featured_id;
-}
-foreach ($gallery_ids as $gid) {
-	if ($gid && $gid !== $featured_id) {
-		$all_images[] = $gid;
-	}
-}
-
-$full_address_parts = array_filter(array($address, $city, $state, $zip, $country));
-$full_address       = implode(', ', $full_address_parts);
-$maps_url           = $full_address ? 'https://www.google.com/maps/search/' . rawurlencode($full_address) : '';
-
-$is_open = false;
-if ($opening_time && $closing_time && is_array($working_days)) {
-	$current_day  = strtolower(wp_date('l'));
-	$current_time = wp_date('H:i');
-	if (in_array($current_day, $working_days, true) && $current_time >= $opening_time && $current_time <= $closing_time) {
-		$is_open = true;
-	}
-}
-
-$categories = get_the_terms($post_id, 'cb_listing_category');
-$tags       = get_the_terms($post_id, 'cb_listing_tag');
+$categories = get_the_terms($post_id, \CBListingAnything\Config\Taxonomies::CATEGORY_TAXONOMY);
+$tags       = get_the_terms($post_id, \CBListingAnything\Config\Taxonomies::TAG_TAXONOMY);
 
 $has_socials = $facebook || $twitter || $instagram || $linkedin || $youtube;
 
@@ -228,7 +196,7 @@ $wrapper = get_block_wrapper_attributes(array(
 		<div class="cb-listing-single__left">
 			<?php
 			// Include the shared breadcrumb partial
-			include CB_LISTING_ANYTHING_PLUGIN_DIR . 'src/Views/partials/breadcrumb.php';
+			include crocodevs_view_path( 'partials/breadcrumb' );
 			?>
 
 			<?php if ($show_gallery && ! empty($all_images)) : ?>

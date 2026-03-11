@@ -4,7 +4,11 @@
     "type": "wordpress-plugin",
     "autoload": {
         "psr-4": {
-            "CBListingAnything\\": "src/"
-        }
+            "CBListingAnything\\": "src/",
+            "CrocoDevs\\": "vendor/crocodevs/framework/src/"
+        },
+        "files": [
+            "vendor/crocodevs/framework/src/Support/helpers.php"
+        ]
     }
 }

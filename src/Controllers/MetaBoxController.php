@@ -244,7 +244,7 @@ class MetaBoxController extends AbstractController {
 			}
 		}
 
-		include CB_LISTING_ANYTHING_PLUGIN_DIR . 'src/Views/admin/meta-box-listing-details.php';
+		include crocodevs_view_path( 'admin/meta-box-listing-details' );
 	}
 
 	public function save_meta_data( $post_id ) {

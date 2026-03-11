@@ -10,18 +10,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Check if we're on archive/category pages (these don't need a post_id)
-$is_archive = is_post_type_archive( 'cb_listing' );
-$is_category = is_tax( 'cb_listing_category' );
-$is_tag = is_tax( 'cb_listing_tag' );
+$is_archive = is_post_type_archive( \CBListingAnything\Config\PostType::POST_TYPE );
+$is_category = is_tax( \CBListingAnything\Config\Taxonomies::CATEGORY_TAXONOMY );
+$is_tag = is_tax( \CBListingAnything\Config\Taxonomies::TAG_TAXONOMY );
 
 // Only get post_id for single listing pages or REST API preview
 $post_id = null;
-if ( is_singular( 'cb_listing' ) ) {
+if ( is_singular( \CBListingAnything\Config\PostType::POST_TYPE ) ) {
 	$post_id = isset( $block->context['postId'] ) ? absint( $block->context['postId'] ) : get_the_ID();
 } elseif ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
 	// For REST API (block editor preview), get a preview post
 	$preview = get_posts( array(
-		'post_type'      => 'cb_listing',
+		'post_type'      => \CBListingAnything\Config\PostType::POST_TYPE,
 		'posts_per_page' => 1,
 		'post_status'    => 'publish',
 	) );
@@ -35,7 +35,7 @@ if ( is_singular( 'cb_listing' ) ) {
 }
 
 // Validate post_id only if we have one (not needed for archive pages)
-if ( $post_id && 'cb_listing' !== get_post_type( $post_id ) ) {
+if ( $post_id && \CBListingAnything\Config\PostType::POST_TYPE !== get_post_type( $post_id ) ) {
 	return;
 }
 
@@ -113,6 +113,6 @@ $wrapper = get_block_wrapper_attributes( array(
 	// Pass post_id to partial (may be null for archive pages)
 	$post_id = isset( $post_id ) ? $post_id : null;
 	// Include the shared breadcrumb partial
-	include CB_LISTING_ANYTHING_PLUGIN_DIR . 'src/Views/partials/breadcrumb.php';
+	include crocodevs_view_path( 'partials/breadcrumb' );
 	?>
 </div>
