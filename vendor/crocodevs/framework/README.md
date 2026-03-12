@@ -39,7 +39,7 @@ Framework::bootstrap( __DIR__ );
 
 The framework will:
 
-1. Load configuration from `vendor/crocodevs/framework/config/` (defaults) merged with your plugin's `config/` directory (overrides).
+1. Load built-in defaults (from `Framework::getDefaultConfig()`) merged with your plugin's `config/` directory (overrides).
 2. Register and boot service providers listed in `config/app.php → providers`.
 3. If `config/app.php → use_router` is `true`, hook `rest_api_init` to load your `routes/api.php` file.
 
@@ -49,12 +49,8 @@ The framework will:
 
 ```
 vendor/crocodevs/framework/
-├── config/
-│   └── app.php                  # Framework defaults
 ├── src/
-│   ├── Framework.php            # Entry point — bootstrap, paths, config proxy
-│   ├── Config/
-│   │   └── Config.php           # Dot-notation configuration store
+│   ├── Framework.php            # Entry point — bootstrap, paths, config
 │   ├── Container/
 │   │   └── ServiceManager.php   # Lightweight service container
 │   ├── Database/
@@ -106,21 +102,23 @@ Framework::assetUrl( 'build/css/style.css' );
 
 ### How it works
 
-The framework loads every `*.php` file from two directories:
+Configuration comes from two sources, merged with `array_replace_recursive`:
 
-1. **Framework defaults** — `vendor/crocodevs/framework/config/`
-2. **Plugin overrides** — `<plugin-root>/config/`
+1. **Framework defaults** — hardcoded in `Framework::getDefaultConfig()` (no config files inside the framework).
+2. **Plugin config files** — `<plugin-root>/config/*.php`. Each file returns a PHP array; the filename (without `.php`) becomes the top-level key.
 
-Each file returns a PHP array. The filename (without `.php`) becomes the top-level key. Plugin arrays are merged over framework defaults with `array_replace_recursive`.
+### Built-in defaults
 
-### Default `config/app.php`
+The framework provides these defaults (overridable by plugin config files):
 
 ```php
-return array(
-    'name'       => 'CrocoDevs App',
-    'api_prefix' => 'cb-listing-anything/v1',
-    'use_router' => false,
-    'providers'  => array(),
+array(
+    'app' => array(
+        'name'       => 'CrocoDevs App',
+        'api_prefix' => 'crocodevs/v1',
+        'use_router' => false,
+        'providers'  => array(),
+    ),
 );
 ```
 
@@ -142,11 +140,11 @@ return array(
 Use dot-notation to drill into nested arrays:
 
 ```php
-use CrocoDevs\Config\Config;
+use CrocoDevs\Framework;
 
-Config::get( 'app.name' );                  // "My Plugin"
-Config::get( 'app.api_prefix' );            // "my-plugin/v1"
-Config::get( 'app.custom_key', 'default' ); // "default" if not set
+Framework::config( 'app.name' );                  // "My Plugin"
+Framework::config( 'app.api_prefix' );            // "my-plugin/v1"
+Framework::config( 'app.custom_key', 'default' ); // "default" if not set
 ```
 
 Or use the global helper:
@@ -565,4 +563,14 @@ public function whereMetaExists( $key ) {
 
 ### Creating config files for new modules
 
-Drop a PHP file in `vendor/crocodevs/framework/config/` for defaults, and let plugins override by placing a file with the same name in their `config/` directory.
+Drop a PHP file in your plugin's `config/` directory. The filename becomes the top-level key:
+
+```php
+// config/mail.php
+return array( 'from' => 'hello@example.com', 'driver' => 'wp_mail' );
+
+// Usage
+crocodevs_config( 'mail.from' ); // "hello@example.com"
+```
+
+If the framework itself needs new defaults, add them to `Framework::getDefaultConfig()`.

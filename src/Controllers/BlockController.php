@@ -2,8 +2,6 @@
 
 namespace CBListingAnything\Controllers;
 
-use CBListingAnything\Config\PostType as PostTypeConfig;
-use CBListingAnything\Config\Taxonomies as TaxonomiesConfig;
 use CBListingAnything\Core\AbstractController;
 use CBListingAnything\Models\ListingMeta as ListingMetaModel;
 use CBListingAnything\Controllers\SettingsController;
@@ -78,7 +76,7 @@ class BlockController extends AbstractController {
 			return $allowed_blocks;
 		}
 
-		if ( isset( $editor_context->post ) && PostTypeConfig::POST_TYPE === $editor_context->post->post_type ) {
+		if ( isset( $editor_context->post ) && crocodevs_config( 'post_type.slug' ) === $editor_context->post->post_type ) {
 			return $allowed_blocks;
 		}
 
@@ -107,7 +105,7 @@ class BlockController extends AbstractController {
 	public function localize_block_data() {
 		$terms = get_terms(
 			array(
-				'taxonomy'   => TaxonomiesConfig::CATEGORY_TAXONOMY,
+				'taxonomy'   => crocodevs_config( 'taxonomies.category' ),
 				'hide_empty' => false,
 			)
 		);

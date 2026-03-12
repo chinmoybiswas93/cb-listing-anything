@@ -2,8 +2,6 @@
 
 namespace CBListingAnything\Controllers;
 
-use CBListingAnything\Config\PostType as PostTypeConfig;
-use CBListingAnything\Config\Taxonomies as TaxonomiesConfig;
 use CBListingAnything\Models\ListingMeta;
 use CrocoDevs\Validation\Validator;
 
@@ -225,7 +223,7 @@ class UserDashboardController {
 		}
 
 		$existing_post = get_post( $editing_post_id );
-		if ( ! $existing_post || PostTypeConfig::POST_TYPE !== $existing_post->post_type ) {
+		if ( ! $existing_post || crocodevs_config( 'post_type.slug' ) !== $existing_post->post_type ) {
 			return null;
 		}
 
@@ -233,10 +231,10 @@ class UserDashboardController {
 		$form_content     = $existing_post->post_content;
 		$form_featured_id = (int) get_post_thumbnail_id( $existing_post );
 
-		$existing_categories = wp_get_object_terms( $editing_post_id, TaxonomiesConfig::CATEGORY_TAXONOMY, array( 'fields' => 'ids' ) );
+		$existing_categories = wp_get_object_terms( $editing_post_id, crocodevs_config( 'taxonomies.category' ), array( 'fields' => 'ids' ) );
 		$form_category_id    = ( ! is_wp_error( $existing_categories ) && ! empty( $existing_categories ) ) ? (int) $existing_categories[0] : 0;
 
-		$existing_tags = wp_get_object_terms( $editing_post_id, TaxonomiesConfig::TAG_TAXONOMY, array( 'fields' => 'ids' ) );
+		$existing_tags = wp_get_object_terms( $editing_post_id, crocodevs_config( 'taxonomies.tag' ), array( 'fields' => 'ids' ) );
 		$form_tag_ids  = ! is_wp_error( $existing_tags ) ? array_map( 'intval', $existing_tags ) : array();
 
 		$form_meta = array();
@@ -358,11 +356,11 @@ class UserDashboardController {
 				continue;
 			}
 
-			$existing = get_term_by( 'name', $tag_name, TaxonomiesConfig::TAG_TAXONOMY );
+			$existing = get_term_by( 'name', $tag_name, crocodevs_config( 'taxonomies.tag' ) );
 			if ( $existing && ! is_wp_error( $existing ) ) {
 				$extra[] = (int) $existing->term_id;
 			} else {
-				$created = wp_insert_term( $tag_name, TaxonomiesConfig::TAG_TAXONOMY );
+				$created = wp_insert_term( $tag_name, crocodevs_config( 'taxonomies.tag' ) );
 				if ( ! is_wp_error( $created ) && isset( $created['term_id'] ) ) {
 					$extra[] = (int) $created['term_id'];
 				}
@@ -387,7 +385,7 @@ class UserDashboardController {
 			$editing_post_id = isset( $_POST['cb_listing_post_id'] ) ? absint( wp_unslash( $_POST['cb_listing_post_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			if ( $editing_post_id ) {
 				$existing_post = get_post( $editing_post_id );
-				if ( $existing_post && PostTypeConfig::POST_TYPE === $existing_post->post_type
+				if ( $existing_post && crocodevs_config( 'post_type.slug' ) === $existing_post->post_type
 					&& ( current_user_can( 'manage_options' ) || (int) $existing_post->post_author === (int) $current_user->ID )
 				) {
 					$post_id       = $editing_post_id;
@@ -407,7 +405,7 @@ class UserDashboardController {
 			}
 		} else {
 			$post_id = wp_insert_post( array(
-				'post_type'    => PostTypeConfig::POST_TYPE,
+				'post_type'    => crocodevs_config( 'post_type.slug' ),
 				'post_title'   => $form_title,
 				'post_content' => $form_content,
 				'post_status'  => 'pending',
@@ -424,8 +422,8 @@ class UserDashboardController {
 		}
 
 		// Sync taxonomies.
-		wp_set_object_terms( $post_id, $form_category_id ? array( $form_category_id ) : array(), TaxonomiesConfig::CATEGORY_TAXONOMY, false );
-		wp_set_object_terms( $post_id, ! empty( $form_tag_ids ) ? $form_tag_ids : array(), TaxonomiesConfig::TAG_TAXONOMY, false );
+		wp_set_object_terms( $post_id, $form_category_id ? array( $form_category_id ) : array(), crocodevs_config( 'taxonomies.category' ), false );
+		wp_set_object_terms( $post_id, ! empty( $form_tag_ids ) ? $form_tag_ids : array(), crocodevs_config( 'taxonomies.tag' ), false );
 
 		// Sync meta.
 		foreach ( $meta_field_keys as $field_key ) {

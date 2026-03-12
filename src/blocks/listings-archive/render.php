@@ -39,10 +39,10 @@ $current_term = null;
 $is_category_archive = false;
 $is_tag_archive = false;
 
-if ( is_tax( \CBListingAnything\Config\Taxonomies::CATEGORY_TAXONOMY ) ) {
+if ( is_tax( crocodevs_config('taxonomies.category') ) ) {
 	$current_term = get_queried_object();
 	$is_category_archive = true;
-} elseif ( is_tax( \CBListingAnything\Config\Taxonomies::TAG_TAXONOMY ) ) {
+} elseif ( is_tax( crocodevs_config('taxonomies.tag') ) ) {
 	$current_term = get_queried_object();
 	$is_tag_archive = true;
 }
@@ -51,11 +51,11 @@ if ( is_tax( \CBListingAnything\Config\Taxonomies::CATEGORY_TAXONOMY ) ) {
 $parent_terms       = array();
 $current_parent     = null;
 $subcategory_terms   = array();
-$all_tab_url        = get_post_type_archive_link( \CBListingAnything\Config\PostType::POST_TYPE );
+$all_tab_url        = get_post_type_archive_link( crocodevs_config('post_type.slug') );
 if ( ! empty( $attrs['showCategoryTabs'] ) ) {
 	$hide_empty_cats = empty( $attrs['showEmptyCategories'] );
 	$all_cat_terms = get_terms( array(
-		'taxonomy'   => \CBListingAnything\Config\Taxonomies::CATEGORY_TAXONOMY,
+		'taxonomy'   => crocodevs_config('taxonomies.category'),
 		'hide_empty' => $hide_empty_cats,
 		'orderby'    => 'term_id',
 		'order'      => 'ASC',
@@ -67,14 +67,14 @@ if ( ! empty( $attrs['showCategoryTabs'] ) ) {
 		if ( 0 === (int) $current_term->parent ) {
 			$current_parent = $current_term;
 		} else {
-			$current_parent = get_term( (int) $current_term->parent, \CBListingAnything\Config\Taxonomies::CATEGORY_TAXONOMY );
+			$current_parent = get_term( (int) $current_term->parent, crocodevs_config('taxonomies.category') );
 			if ( is_wp_error( $current_parent ) || ! $current_parent ) {
 				$current_parent = $current_term;
 			}
 		}
 		if ( $current_parent && ! empty( $attrs['showSubcategoryButtons'] ) ) {
 			$subcategory_terms = get_terms( array(
-				'taxonomy'   => \CBListingAnything\Config\Taxonomies::CATEGORY_TAXONOMY,
+				'taxonomy'   => crocodevs_config('taxonomies.category'),
 				'parent'     => $current_parent->term_id,
 				'hide_empty' => $hide_empty_cats,
 				'orderby'    => 'term_id',
@@ -97,8 +97,8 @@ $paged      = $filters['paged'];
 $query      = \CBListingAnything\Helpers\ArchiveHelper::build_query( $filters, $per_page );
 
 // Determine the base URL for forms and pagination
-if ( is_post_type_archive( \CBListingAnything\Config\PostType::POST_TYPE ) ) {
-	$archive_url = get_post_type_archive_link( \CBListingAnything\Config\PostType::POST_TYPE );
+if ( is_post_type_archive( crocodevs_config('post_type.slug') ) ) {
+	$archive_url = get_post_type_archive_link( crocodevs_config('post_type.slug') );
 	global $wp;
 	$current_path = untrailingslashit( $wp->request );
 	if ( $current_path ) {
@@ -111,11 +111,11 @@ if ( is_post_type_archive( \CBListingAnything\Config\PostType::POST_TYPE ) ) {
 	// On taxonomy archive, use the term archive URL
 	$form_action = get_term_link( $current_term );
 	if ( is_wp_error( $form_action ) ) {
-		$form_action = get_post_type_archive_link( \CBListingAnything\Config\PostType::POST_TYPE );
+		$form_action = get_post_type_archive_link( crocodevs_config('post_type.slug') );
 	}
 	$form_action = remove_query_arg( array( 'paged', 'page', 'listing_category', 'listing_tag', 'price_min', 'price_max', 'orderby' ), $form_action );
 } else {
-	$archive_url = get_post_type_archive_link( \CBListingAnything\Config\PostType::POST_TYPE );
+	$archive_url = get_post_type_archive_link( crocodevs_config('post_type.slug') );
 	$form_action = $archive_url;
 }
 
@@ -242,7 +242,7 @@ $is_all_archive = ! $is_category_archive && ! $is_tag_archive;
 			</div>
 			<form method="get" action="<?php echo esc_url( $form_action ); ?>" class="cb-listings-archive__filters-form">
 				<?php if ( ! empty( $attrs['showFilterTag'] ) ) :
-					$tag_terms = get_terms( array( 'taxonomy' => \CBListingAnything\Config\Taxonomies::TAG_TAXONOMY, 'hide_empty' => true ) );
+					$tag_terms = get_terms( array( 'taxonomy' => crocodevs_config('taxonomies.tag'), 'hide_empty' => true ) );
 					if ( ! is_wp_error( $tag_terms ) && ! empty( $tag_terms ) ) :
 				?>
 				<div class="cb-listings-archive__filter-section">

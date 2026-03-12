@@ -2,7 +2,6 @@
 
 namespace CBListingAnything\Rest;
 
-use CBListingAnything\Config\App as AppConfig;
 use CBListingAnything\Core\AbstractController;
 
 /**
@@ -18,7 +17,7 @@ abstract class AbstractRestController extends AbstractController {
 	 * @return string
 	 */
 	protected function rest_namespace() {
-		return AppConfig::REST_NAMESPACE;
+		return crocodevs_config( 'app.api_prefix' );
 	}
 
 	/**

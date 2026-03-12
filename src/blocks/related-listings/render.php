@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $post_id = isset( $block->context['postId'] ) ? absint( $block->context['postId'] ) : get_the_ID();
 
-if ( ! $post_id || \CBListingAnything\Config\PostType::POST_TYPE !== get_post_type( $post_id ) ) {
+if ( ! $post_id || crocodevs_config('post_type.slug') !== get_post_type( $post_id ) ) {
 	$post_id = \CBListingAnything\Helpers\ListingHelper::get_preview_post_id();
 	if ( ! $post_id ) {
 		if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
@@ -28,34 +28,34 @@ $query        = null;
 $category_ids = array();
 $tag_ids      = array();
 
-$post_categories = get_the_terms( $post_id, \CBListingAnything\Config\Taxonomies::CATEGORY_TAXONOMY );
+$post_categories = get_the_terms( $post_id, crocodevs_config('taxonomies.category') );
 if ( $post_categories && ! is_wp_error( $post_categories ) ) {
 	$category_ids = wp_list_pluck( $post_categories, 'term_id' );
 }
 
 if ( ! empty( $category_ids ) ) {
 	$query = \CrocoDevs\Database\QueryBuilder::make()
-		->postType( \CBListingAnything\Config\PostType::POST_TYPE )
+		->postType( crocodevs_config('post_type.slug') )
 		->perPage( $per_page )
 		->status( 'publish' )
 		->exclude( $post_id )
-		->whenTax( \CBListingAnything\Config\Taxonomies::CATEGORY_TAXONOMY, 'term_id', $category_ids )
+		->whenTax( crocodevs_config('taxonomies.category'), 'term_id', $category_ids )
 		->get();
 }
 
 if ( ! $query || ! $query->have_posts() ) {
-	$post_tags = get_the_terms( $post_id, \CBListingAnything\Config\Taxonomies::TAG_TAXONOMY );
+	$post_tags = get_the_terms( $post_id, crocodevs_config('taxonomies.tag') );
 	if ( $post_tags && ! is_wp_error( $post_tags ) ) {
 		$tag_ids = wp_list_pluck( $post_tags, 'term_id' );
 	}
 
 	if ( ! empty( $tag_ids ) ) {
 		$query = \CrocoDevs\Database\QueryBuilder::make()
-			->postType( \CBListingAnything\Config\PostType::POST_TYPE )
+			->postType( crocodevs_config('post_type.slug') )
 			->perPage( $per_page )
 			->status( 'publish' )
 			->exclude( $post_id )
-			->whenTax( \CBListingAnything\Config\Taxonomies::TAG_TAXONOMY, 'term_id', $tag_ids )
+			->whenTax( crocodevs_config('taxonomies.tag'), 'term_id', $tag_ids )
 			->get();
 	}
 }

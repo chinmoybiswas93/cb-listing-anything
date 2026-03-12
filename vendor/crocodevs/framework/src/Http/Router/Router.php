@@ -2,7 +2,7 @@
 
 namespace CrocoDevs\Http\Router;
 
-use CrocoDevs\Config\Config;
+use CrocoDevs\Framework;
 use CrocoDevs\Http\Request;
 
 /**
@@ -104,7 +104,7 @@ class Router {
 	 * @return void
 	 */
 	public static function registerRoutes() {
-		$namespace = Config::get( 'app.api_prefix', 'crocodevs/v1' );
+		$namespace = Framework::config( 'app.api_prefix', 'crocodevs/v1' );
 
 		foreach ( self::$routes as $route ) {
 			$handler = $route['handler'];

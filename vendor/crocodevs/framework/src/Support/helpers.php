@@ -7,7 +7,6 @@
  * @package CrocoDevs\Support
  */
 
-use CrocoDevs\Config\Config;
 use CrocoDevs\Framework;
 use CrocoDevs\Container\ServiceManager;
 use CrocoDevs\Validation\Validator;
@@ -75,7 +74,7 @@ if ( ! function_exists( 'crocodevs_config' ) ) {
 	 * @return mixed
 	 */
 	function crocodevs_config( $key, $default = null ) {
-		return Config::get( $key, $default );
+		return Framework::config( $key, $default );
 	}
 }
 

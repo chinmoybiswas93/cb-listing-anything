@@ -2,7 +2,6 @@
 
 namespace CBListingAnything\Controllers;
 
-use CBListingAnything\Config\Taxonomies as TaxonomiesConfig;
 use CBListingAnything\Core\AbstractController;
 
 /**
@@ -13,7 +12,7 @@ class CategoryImageController extends AbstractController {
 	const META_KEY = 'cb_listing_anything_category_image';
 
 	public function init() {
-		$tax = TaxonomiesConfig::CATEGORY_TAXONOMY;
+		$tax = crocodevs_config( 'taxonomies.category' );
 		add_action( $tax . '_add_form_fields', array( $this, 'add_form_fields' ) );
 		add_action( $tax . '_edit_form_fields', array( $this, 'edit_form_fields' ) );
 		add_action( 'created_' . $tax, array( $this, 'save_term_image' ) );
@@ -101,7 +100,7 @@ class CategoryImageController extends AbstractController {
 			return;
 		}
 		$screen = get_current_screen();
-		if ( ! $screen || $screen->taxonomy !== TaxonomiesConfig::CATEGORY_TAXONOMY ) {
+		if ( ! $screen || $screen->taxonomy !== crocodevs_config( 'taxonomies.category' ) ) {
 			return;
 		}
 		wp_enqueue_media();

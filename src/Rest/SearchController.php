@@ -2,8 +2,6 @@
 
 namespace CBListingAnything\Rest;
 
-use CBListingAnything\Config\PostType as PostTypeConfig;
-use CBListingAnything\Config\Taxonomies as TaxonomiesConfig;
 use CBListingAnything\Controllers\SettingsController;
 use CrocoDevs\Database\QueryBuilder;
 use CrocoDevs\Http\Response;
@@ -65,11 +63,11 @@ class SearchController extends AbstractRestController {
 		}
 
 		$query = QueryBuilder::make()
-			->postType( PostTypeConfig::POST_TYPE )
+			->postType( crocodevs_config( 'post_type.slug' ) )
 			->status( 'publish' )
 			->perPage( 8 )
 			->whenKeyword( (string) $keyword )
-			->whenTax( TaxonomiesConfig::CATEGORY_TAXONOMY, 'term_id', $category )
+			->whenTax( crocodevs_config( 'taxonomies.category' ), 'term_id', $category )
 			->get();
 
 		$results = array();
@@ -81,7 +79,7 @@ class SearchController extends AbstractRestController {
 				$thumb_url = get_the_post_thumbnail_url( $post_id, 'thumbnail' );
 				$location  = get_post_meta( $post_id, '_listing_location', true );
 				$price     = get_post_meta( $post_id, '_listing_price', true );
-				$cats      = get_the_terms( $post_id, TaxonomiesConfig::CATEGORY_TAXONOMY );
+				$cats      = get_the_terms( $post_id, crocodevs_config( 'taxonomies.category' ) );
 				$cat_name  = '';
 
 				if ( $cats && ! is_wp_error( $cats ) ) {

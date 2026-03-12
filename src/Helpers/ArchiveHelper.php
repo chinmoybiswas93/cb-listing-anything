@@ -2,8 +2,6 @@
 
 namespace CBListingAnything\Helpers;
 
-use CBListingAnything\Config\PostType as PostTypeConfig;
-use CBListingAnything\Config\Taxonomies as TaxonomiesConfig;
 use CrocoDevs\Database\QueryBuilder;
 
 /**
@@ -92,16 +90,16 @@ class ArchiveHelper {
 	 */
 	public static function build_query( array $filters, $per_page ) {
 		$builder = QueryBuilder::make()
-			->postType( PostTypeConfig::POST_TYPE )
+			->postType( crocodevs_config( 'post_type.slug' ) )
 			->status( 'publish' )
 			->perPage( $per_page )
 			->page( $filters['paged'] );
 
 		if ( ! empty( $filters['filter_cat'] ) ) {
-			$builder->whenTax( TaxonomiesConfig::CATEGORY_TAXONOMY, 'term_id', $filters['filter_cat'] );
+			$builder->whenTax( crocodevs_config( 'taxonomies.category' ), 'term_id', $filters['filter_cat'] );
 		}
 		if ( ! empty( $filters['filter_tag'] ) ) {
-			$builder->whenTax( TaxonomiesConfig::TAG_TAXONOMY, 'term_id', $filters['filter_tag'] );
+			$builder->whenTax( crocodevs_config( 'taxonomies.tag' ), 'term_id', $filters['filter_tag'] );
 		}
 		if ( ! empty( $filters['filter_cat'] ) && ! empty( $filters['filter_tag'] ) ) {
 			$current_args = $builder->toArgs();

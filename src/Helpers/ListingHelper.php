@@ -2,8 +2,6 @@
 
 namespace CBListingAnything\Helpers;
 
-use CBListingAnything\Config\PostType as PostTypeConfig;
-use CBListingAnything\Config\Taxonomies as TaxonomiesConfig;
 use CrocoDevs\Database\QueryBuilder;
 
 /**
@@ -130,7 +128,7 @@ class ListingHelper {
 		}
 
 		$preview_query = QueryBuilder::make()
-			->postType( PostTypeConfig::POST_TYPE )
+			->postType( crocodevs_config( 'post_type.slug' ) )
 			->perPage( 1 )
 			->status( 'publish' )
 			->fields( 'ids' )

@@ -104,7 +104,7 @@ if ( isset( $_GET['edit_listing'] ) ) { // phpcs:ignore WordPress.Security.Nonce
 	$maybe_id = absint( wp_unslash( $_GET['edit_listing'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	if ( $maybe_id ) {
 		$maybe_post = get_post( $maybe_id );
-		if ( $maybe_post && \CBListingAnything\Config\PostType::POST_TYPE === $maybe_post->post_type ) {
+		if ( $maybe_post && crocodevs_config('post_type.slug') === $maybe_post->post_type ) {
 			if ( current_user_can( 'manage_options' ) || (int) $maybe_post->post_author === (int) $current_user->ID ) {
 				$editing_post_id = $maybe_id;
 			}
@@ -165,7 +165,7 @@ $tags       = array();
 
 if ( 'add' === $tab ) {
 	$category_terms = get_terms( array(
-		'taxonomy'   => \CBListingAnything\Config\Taxonomies::CATEGORY_TAXONOMY,
+		'taxonomy'   => crocodevs_config('taxonomies.category'),
 		'hide_empty' => false,
 		'orderby'    => 'name',
 		'order'      => 'ASC',
@@ -175,7 +175,7 @@ if ( 'add' === $tab ) {
 	}
 
 	$tag_terms = get_terms( array(
-		'taxonomy'   => \CBListingAnything\Config\Taxonomies::TAG_TAXONOMY,
+		'taxonomy'   => crocodevs_config('taxonomies.tag'),
 		'hide_empty' => false,
 		'orderby'    => 'name',
 		'order'      => 'ASC',
@@ -1173,7 +1173,7 @@ JS;
 					$paged = isset( $_GET['cbld_page'] ) ? max( 1, absint( $_GET['cbld_page'] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 				$listings_query = \CrocoDevs\Database\QueryBuilder::make()
-					->postType( \CBListingAnything\Config\PostType::POST_TYPE )
+					->postType( crocodevs_config('post_type.slug') )
 					->status( array( 'pending', 'publish', 'draft', 'trash' ) )
 					->author( get_current_user_id() )
 					->perPage( 10 )

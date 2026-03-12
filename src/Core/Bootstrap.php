@@ -62,12 +62,7 @@ if ( ! function_exists( 'cb_listing_anything_init' ) ) {
 			return null;
 		}
 
-		Framework::bootstrap(
-			CB_LISTING_ANYTHING_PLUGIN_DIR,
-			array(
-				'CBListingAnything\\Providers\\ListingServiceProvider',
-			)
-		);
+		Framework::bootstrap( CB_LISTING_ANYTHING_PLUGIN_DIR );
 
 		$plugin = Plugin::instance();
 		$plugin->run();

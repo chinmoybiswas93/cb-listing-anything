@@ -17,17 +17,17 @@ $show_call_button  = isset( $attributes['showCallButton'] ) ? $attributes['showC
 if ( $use_current_query && ! ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) {
 	global $wp_query;
 	$query = \CrocoDevs\Database\QueryBuilder::make( $wp_query->query_vars )
-		->postType( \CBListingAnything\Config\PostType::POST_TYPE )
+		->postType( crocodevs_config('post_type.slug') )
 		->perPage( $per_page )
 		->status( 'publish' )
 		->get();
 } else {
 	$builder = \CrocoDevs\Database\QueryBuilder::make()
-		->postType( \CBListingAnything\Config\PostType::POST_TYPE )
+		->postType( crocodevs_config('post_type.slug') )
 		->perPage( $per_page )
 		->status( 'publish' );
 	if ( ! $use_current_query && $category_filter > 0 ) {
-		$builder->whenTax( \CBListingAnything\Config\Taxonomies::CATEGORY_TAXONOMY, 'term_id', $category_filter );
+		$builder->whenTax( crocodevs_config('taxonomies.category'), 'term_id', $category_filter );
 	}
 	$query = $builder->get();
 }

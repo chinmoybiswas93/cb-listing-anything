@@ -17,7 +17,7 @@ This document covers the full plugin architecture, the CrocoDevs framework integ
 9. [Query Builder](#query-builder)
 10. [Validation](#validation)
 11. [Models & Helpers](#models--helpers)
-12. [Config Classes (Static Definitions)](#config-classes-static-definitions)
+12. [Config Quick Reference](#config-quick-reference)
 13. [Blocks](#blocks)
 14. [Views & Partials](#views--partials)
 15. [Hooks System](#hooks-system)
@@ -38,7 +38,7 @@ This document covers the full plugin architecture, the CrocoDevs framework integ
 │  ↓                → Plugin::instance()->run()       │
 ├─────────────────────────────────────────────────────┤
 │  CrocoDevs Framework                                │
-│  ├─ Config::set/get   (configuration)               │
+│  ├─ Framework::config() (configuration)             │
 │  ├─ ServiceManager    (container)                   │
 │  ├─ ServiceProviderManager (lifecycle)              │
 │  ├─ Router            (REST route collector)        │
@@ -46,8 +46,6 @@ This document covers the full plugin architecture, the CrocoDevs framework integ
 │  └─ Validator         (input validation)            │
 ├─────────────────────────────────────────────────────┤
 │  Plugin Layer (CBListingAnything\)                   │
-│  ├─ Config\       Static definitions (PostType,     │
-│  │                Taxonomies, ListingMeta, App)      │
 │  ├─ Providers\    ListingServiceProvider             │
 │  ├─ Controllers\  PostType, Taxonomy, MetaBox,       │
 │  │                Block, Settings, CategoryImage,    │
@@ -71,7 +69,9 @@ cb-listing-anything/
 ├── cb-listing-anything.php      # Main plugin file (constants + autoload)
 ├── composer.json                # Autoloading config
 ├── config/
-│   └── app.php                  # Plugin-level config overrides
+│   ├── app.php                  # App name, API prefix, router toggle, providers
+│   ├── post_type.php            # Post type slug and supports
+│   └── taxonomies.php           # Taxonomy slugs (category, tag)
 ├── routes/
 │   └── api.php                  # REST route definitions (Router)
 ├── src/
@@ -79,11 +79,6 @@ cb-listing-anything/
 │   │   ├── Bootstrap.php        # Activation/deactivation, plugins_loaded init
 │   │   ├── Plugin.php           # Singleton: wires controllers and REST
 │   │   └── AbstractController.php
-│   ├── Config/
-│   │   ├── App.php              # REST_NAMESPACE, plugin-level constants
-│   │   ├── PostType.php         # Post type slug, labels, args
-│   │   ├── Taxonomies.php       # Taxonomy slugs and labels
-│   │   └── ListingMeta.php      # Meta field definitions & categories
 │   ├── Providers/
 │   │   └── ListingServiceProvider.php  # Container bindings for all controllers
 │   ├── Controllers/
@@ -102,7 +97,7 @@ cb-listing-anything/
 │   │   └── ListingController.php       # Stub for future endpoints
 │   ├── Models/
 │   │   ├── AbstractModel.php
-│   │   └── ListingMeta.php             # Sanitize, key mapping, field types
+│   │   └── ListingMeta.php             # Field definitions, sanitize, key mapping
 │   ├── Helpers/
 │   │   ├── ListingHelper.php           # Shared listing business logic
 │   │   └── ArchiveHelper.php           # Archive filter parsing & query building
@@ -168,17 +163,17 @@ cb-listing-anything/
 
 The plugin uses two configuration layers:
 
-### 1. Framework Config (`CrocoDevs\Config\Config`)
+### 1. Framework Config (`Framework::config()`)
 
 The framework loads `config/app.php` at bootstrap. Access any value with dot-notation:
 
 ```php
-use CrocoDevs\Config\Config;
+use CrocoDevs\Framework;
 
-Config::get( 'app.name' );        // "CB Listing Anything"
-Config::get( 'app.api_prefix' );  // "cb-listing-anything/v1"
-Config::get( 'app.use_router' );  // true
-Config::get( 'app.providers' );   // [ 'CBListingAnything\\Providers\\ListingServiceProvider' ]
+Framework::config( 'app.name' );        // "CB Listing Anything"
+Framework::config( 'app.api_prefix' );  // "cb-listing-anything/v1"
+Framework::config( 'app.use_router' );  // true
+Framework::config( 'app.providers' );   // [ 'CBListingAnything\\Providers\\ListingServiceProvider' ]
 ```
 
 Global helper: `crocodevs_config( 'app.api_prefix' )`
@@ -187,35 +182,52 @@ Plugin's `config/app.php`:
 
 ```php
 return array(
-    'name'       => 'CB Listing Anything',
-    'api_prefix' => 'cb-listing-anything/v1',
-    'use_router' => true,
-    'providers'  => array(
+    'name'        => 'CB Listing Anything',
+    'text_domain' => 'cb-listing-anything',
+    'api_prefix'  => 'cb-listing-anything/v1',
+    'use_router'  => true,
+    'providers'   => array(
         'CBListingAnything\\Providers\\ListingServiceProvider',
     ),
 );
 ```
 
-### 2. Plugin Config Classes (`CBListingAnything\Config\*`)
-
-Static PHP classes holding post type slugs, taxonomy names, meta field definitions, and the REST namespace. These are pure data — no WordPress API calls.
-
-| Class | Purpose |
-|-------|---------|
-| `Config\App` | `REST_NAMESPACE` constant. |
-| `Config\PostType` | `POST_TYPE` slug, labels, registration args. |
-| `Config\Taxonomies` | `CATEGORY_TAXONOMY`, `TAG_TAXONOMY` slugs. |
-| `Config\ListingMeta` | Field definitions, categories, types, keys. |
-
-Use config constants everywhere instead of hardcoded strings:
+Plugin's `config/post_type.php`:
 
 ```php
-use CBListingAnything\Config\PostType as PostTypeConfig;
-use CBListingAnything\Config\Taxonomies as TaxonomiesConfig;
-
-$args = [ 'post_type' => PostTypeConfig::POST_TYPE ];
-$terms = get_terms( [ 'taxonomy' => TaxonomiesConfig::CATEGORY_TAXONOMY ] );
+return array(
+    'slug'     => 'cb_listing',
+    'supports' => array( 'title', 'editor', 'thumbnail', 'excerpt', 'custom-fields', 'revisions', 'author' ),
+);
 ```
+
+Plugin's `config/taxonomies.php`:
+
+```php
+return array(
+    'category' => 'cb_listing_category',
+    'tag'      => 'cb_listing_tag',
+);
+```
+
+### 2. Plugin Config Files
+
+All plugin-specific configuration lives in the `config/` directory as simple PHP arrays. No static config classes needed.
+
+| File | Keys | Purpose |
+|------|------|---------|
+| `config/app.php` | `name`, `text_domain`, `api_prefix`, `use_router`, `providers` | Core plugin settings. |
+| `config/post_type.php` | `slug`, `supports` | Post type registration data. |
+| `config/taxonomies.php` | `category`, `tag` | Taxonomy slugs. |
+
+Use `crocodevs_config()` everywhere instead of hardcoded strings:
+
+```php
+$args = [ 'post_type' => crocodevs_config( 'post_type.slug' ) ];
+$terms = get_terms( [ 'taxonomy' => crocodevs_config( 'taxonomies.category' ) ] );
+```
+
+Listing meta field definitions live in `Models\ListingMeta` (the single source of truth for field structure, sanitization, and type information).
 
 ---
 
@@ -284,7 +296,7 @@ Each controller extends `CBListingAnything\Core\AbstractController` and is respo
 
 See `docs/REST-API.md` for endpoint details. Architecture overview:
 
-- **`AbstractRestController`** extends `AbstractController` and provides `$this->rest_namespace()` (from `Config\App::REST_NAMESPACE`).
+- **`AbstractRestController`** extends `AbstractController` and provides `$this->rest_namespace()` (from `crocodevs_config('app.api_prefix')`).
 - Each REST controller implements `register_routes()`.
 - Controllers are registered by `Plugin::run()` on `rest_api_init`.
 
@@ -343,15 +355,14 @@ Used throughout block render files and controllers instead of raw `new WP_Query(
 
 ```php
 use CrocoDevs\Database\QueryBuilder;
-use CBListingAnything\Config\PostType as PostTypeConfig;
 
 $query = QueryBuilder::make()
-    ->postType( PostTypeConfig::POST_TYPE )
+    ->postType( crocodevs_config( 'post_type.slug' ) )
     ->status( 'publish' )
     ->perPage( 12 )
     ->page( $paged )
     ->whenKeyword( $keyword )
-    ->whenTax( 'cb_listing_category', 'term_id', $category_id )
+    ->whenTax( crocodevs_config( 'taxonomies.category' ), 'term_id', $category_id )
     ->get();
 ```
 
@@ -447,35 +458,28 @@ Centralizes archive page filter parsing and query building:
 
 ---
 
-## Config Classes (Static Definitions)
+## Config Quick Reference
 
-These are pure data classes in `src/Config/` — no WordPress API calls, no side effects.
-
-### `Config\App`
+All configuration is accessed via `crocodevs_config()` with dot-notation:
 
 ```php
-App::REST_NAMESPACE  // 'cb-listing-anything/v1'
+crocodevs_config( 'app.api_prefix' )       // 'cb-listing-anything/v1'
+crocodevs_config( 'app.text_domain' )      // 'cb-listing-anything'
+crocodevs_config( 'post_type.slug' )       // 'cb_listing'
+crocodevs_config( 'post_type.supports' )   // ['title', 'editor', ...]
+crocodevs_config( 'taxonomies.category' )  // 'cb_listing_category'
+crocodevs_config( 'taxonomies.tag' )       // 'cb_listing_tag'
 ```
 
-### `Config\PostType`
+Listing meta field definitions are in `Models\ListingMeta`:
 
 ```php
-PostType::POST_TYPE  // 'cb_listing'
-```
+use CBListingAnything\Models\ListingMeta;
 
-### `Config\Taxonomies`
-
-```php
-Taxonomies::CATEGORY_TAXONOMY  // 'cb_listing_category'
-Taxonomies::TAG_TAXONOMY       // 'cb_listing_tag'
-```
-
-### `Config\ListingMeta`
-
-```php
-ListingMeta::field_keys()        // ['listing_price', 'listing_location', ...]
-ListingMeta::field_definitions() // Associative with label, category, type
-ListingMeta::categories()        // ['general' => [...], 'contact' => [...], ...]
+ListingMeta::fields()               // ['listing_price', 'listing_location', ...]
+ListingMeta::definitions()          // Associative with label, category, type
+ListingMeta::categories()           // ['general' => [...], 'contact' => [...], ...]
+ListingMeta::supported_field_types() // ['text' => [...], 'email' => [...], ...]
 ```
 
 ---
@@ -498,7 +502,7 @@ Each block lives in `src/blocks/<block-name>/` with a `render.php` server-side r
 
 Block render files use:
 - `QueryBuilder::make()` instead of raw `WP_Query`.
-- Config constants instead of hardcoded slugs.
+- `crocodevs_config()` instead of hardcoded slugs.
 - `ListingHelper` and `ArchiveHelper` for business logic.
 - `crocodevs_view_path()` for view includes.
 
@@ -527,8 +531,8 @@ Custom hooks are defined as constants in `CBListingAnything\Hooks\HookNames`. Th
 
 ### New listing meta field
 
-1. Add the field key and definition to `src/Config/ListingMeta.php`.
-2. Add sanitization logic in `src/Models/ListingMeta.php::sanitize()`.
+1. Add the field key and definition to `Models\ListingMeta::definitions()`.
+2. Add sanitization logic in `Models\ListingMeta::sanitize()`.
 3. The field will automatically appear in admin meta boxes and dashboard forms.
 4. If the field needs validation, add a rule to `UserDashboardController::submission_rules()`.
 
@@ -552,7 +556,7 @@ public function register_routes() {
 
 ### New taxonomy
 
-1. Add constants to `src/Config/Taxonomies.php`.
+1. Add the slug to `config/taxonomies.php`.
 2. Register in `TaxonomyController` or create a new controller.
 3. Add the controller binding in `ListingServiceProvider`.
 
@@ -560,7 +564,7 @@ public function register_routes() {
 
 1. Create `src/blocks/<name>/` with `block.json`, `edit.js`, `render.php`.
 2. `BlockController` auto-discovers blocks from the `build/` directory.
-3. Use `QueryBuilder` and config constants in `render.php`.
+3. Use `QueryBuilder` and `crocodevs_config()` in `render.php`.
 
 ### New service provider
 

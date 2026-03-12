@@ -11,8 +11,8 @@ $phone        = $_meta['phone'];
 $opening_time = $_meta['opening_time'];
 $closing_time = $_meta['closing_time'];
 $working_days = $_meta['working_days'];
-$categories   = get_the_terms( $card_post_id, \CBListingAnything\Config\Taxonomies::CATEGORY_TAXONOMY );
-$tags         = get_the_terms( $card_post_id, \CBListingAnything\Config\Taxonomies::TAG_TAXONOMY );
+$categories   = get_the_terms( $card_post_id, crocodevs_config('taxonomies.category') );
+$tags         = get_the_terms( $card_post_id, crocodevs_config('taxonomies.tag') );
 $is_open      = \CBListingAnything\Helpers\ListingHelper::is_open( $card_post_id, $opening_time, $closing_time, $working_days );
 ?>
 <article class="cb-listing-card">

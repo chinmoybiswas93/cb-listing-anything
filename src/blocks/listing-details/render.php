@@ -5,7 +5,7 @@ if (! defined('ABSPATH')) {
 
 $post_id = isset($block->context['postId']) ? absint($block->context['postId']) : get_the_ID();
 
-if (! $post_id || \CBListingAnything\Config\PostType::POST_TYPE !== get_post_type($post_id)) {
+if (! $post_id || crocodevs_config('post_type.slug') !== get_post_type($post_id)) {
 	$post_id = \CBListingAnything\Helpers\ListingHelper::get_preview_post_id();
 	if (! $post_id) {
 		if (defined('REST_REQUEST') && REST_REQUEST) {
@@ -56,8 +56,8 @@ $full_address = \CBListingAnything\Helpers\ListingHelper::build_full_address($po
 $maps_url     = $full_address ? 'https://www.google.com/maps/search/' . rawurlencode($full_address) : '';
 $is_open      = \CBListingAnything\Helpers\ListingHelper::is_open($post_id, $opening_time, $closing_time, $working_days);
 
-$categories = get_the_terms($post_id, \CBListingAnything\Config\Taxonomies::CATEGORY_TAXONOMY);
-$tags       = get_the_terms($post_id, \CBListingAnything\Config\Taxonomies::TAG_TAXONOMY);
+$categories = get_the_terms($post_id, crocodevs_config('taxonomies.category'));
+$tags       = get_the_terms($post_id, crocodevs_config('taxonomies.tag'));
 
 $has_socials = $facebook || $twitter || $instagram || $linkedin || $youtube;
 

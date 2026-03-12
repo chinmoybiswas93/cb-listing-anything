@@ -13,7 +13,7 @@ $selected_category_ids  = isset( $attributes['selectedCategoryIds'] ) && is_arra
 $selected_category_ids  = array_filter( $selected_category_ids );
 
 $get_terms_args = array(
-	'taxonomy'   => \CBListingAnything\Config\Taxonomies::CATEGORY_TAXONOMY,
+	'taxonomy'   => crocodevs_config('taxonomies.category'),
 	'hide_empty' => true,
 	'orderby'    => 'name',
 	'order'      => 'ASC',
@@ -86,10 +86,10 @@ $wrapper = get_block_wrapper_attributes( array(
 				}
 				$img_url = '';
 			$q = \CrocoDevs\Database\QueryBuilder::make()
-				->postType( \CBListingAnything\Config\PostType::POST_TYPE )
+				->postType( crocodevs_config('post_type.slug') )
 				->status( 'publish' )
 				->perPage( 1 )
-				->whenTax( \CBListingAnything\Config\Taxonomies::CATEGORY_TAXONOMY, 'term_id', $term->term_id )
+				->whenTax( crocodevs_config('taxonomies.category'), 'term_id', $term->term_id )
 				->fields( 'ids' )
 				->noFoundRows()
 				->get();

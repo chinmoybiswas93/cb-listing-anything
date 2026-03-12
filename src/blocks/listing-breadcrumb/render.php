@@ -10,18 +10,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Check if we're on archive/category pages (these don't need a post_id)
-$is_archive = is_post_type_archive( \CBListingAnything\Config\PostType::POST_TYPE );
-$is_category = is_tax( \CBListingAnything\Config\Taxonomies::CATEGORY_TAXONOMY );
-$is_tag = is_tax( \CBListingAnything\Config\Taxonomies::TAG_TAXONOMY );
+$is_archive = is_post_type_archive( crocodevs_config('post_type.slug') );
+$is_category = is_tax( crocodevs_config('taxonomies.category') );
+$is_tag = is_tax( crocodevs_config('taxonomies.tag') );
 
 // Only get post_id for single listing pages or REST API preview
 $post_id = null;
-if ( is_singular( \CBListingAnything\Config\PostType::POST_TYPE ) ) {
+if ( is_singular( crocodevs_config('post_type.slug') ) ) {
 	$post_id = isset( $block->context['postId'] ) ? absint( $block->context['postId'] ) : get_the_ID();
 } elseif ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
 	// For REST API (block editor preview), get a preview post
 	$preview = get_posts( array(
-		'post_type'      => \CBListingAnything\Config\PostType::POST_TYPE,
+		'post_type'      => crocodevs_config('post_type.slug'),
 		'posts_per_page' => 1,
 		'post_status'    => 'publish',
 	) );
@@ -35,7 +35,7 @@ if ( is_singular( \CBListingAnything\Config\PostType::POST_TYPE ) ) {
 }
 
 // Validate post_id only if we have one (not needed for archive pages)
-if ( $post_id && \CBListingAnything\Config\PostType::POST_TYPE !== get_post_type( $post_id ) ) {
+if ( $post_id && crocodevs_config('post_type.slug') !== get_post_type( $post_id ) ) {
 	return;
 }
 
