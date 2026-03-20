@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $placeholder = isset( $attributes['placeholder'] ) ? $attributes['placeholder'] : __( 'Keywords', 'cb-listing-anything' );
 $button_text = isset( $attributes['buttonText'] ) ? $attributes['buttonText'] : __( 'Search', 'cb-listing-anything' );
-$archive_url = get_post_type_archive_link( 'cb_listing' );
+$archive_url = get_post_type_archive_link( crocodevs_config('post_type.slug') );
 
 // Optional button colors.
 $button_bg   = isset( $attributes['buttonBackgroundColor'] ) ? sanitize_hex_color( $attributes['buttonBackgroundColor'] ) : '';
@@ -26,7 +26,7 @@ if ( $style ) {
 $wrapper = get_block_wrapper_attributes( $wrapper_args );
 
 $terms = get_terms( array(
-	'taxonomy'   => 'cb_listing_category',
+	'taxonomy'   => crocodevs_config('taxonomies.category'),
 	'hide_empty' => false,
 	'orderby'    => 'name',
 	'order'      => 'ASC',
@@ -39,7 +39,7 @@ if ( ! is_wp_error( $terms ) ) {
 ?>
 <div <?php echo $wrapper; ?>
 	data-archive-url="<?php echo esc_url( $archive_url ); ?>"
-	data-rest-url="<?php echo esc_url( rest_url( 'cb-listing-anything/v1' ) ); ?>">
+	data-rest-url="<?php echo esc_url( rest_url( crocodevs_config('app.api_prefix') ) ); ?>">
 
 	<div class="cb-listing-search__form">
 		<div class="cb-listing-search__field cb-listing-search__field--keyword">

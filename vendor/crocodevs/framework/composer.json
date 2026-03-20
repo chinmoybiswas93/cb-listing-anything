@@ -1,0 +1,17 @@
+{
+    "name": "crocodevs/framework",
+    "description": "CrocoDevs WordPress Plugin Framework",
+    "type": "library",
+    "license": "GPL-2.0-or-later",
+    "autoload": {
+        "psr-4": {
+            "CrocoDevs\\": "src/"
+        },
+        "files": [
+            "src/Support/helpers.php"
+        ]
+    },
+    "require": {
+        "php": ">=7.2"
+    }
+}

@@ -5,21 +5,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $post_id = isset( $block->context['postId'] ) ? absint( $block->context['postId'] ) : get_the_ID();
 
-if ( ! $post_id || 'cb_listing' !== get_post_type( $post_id ) ) {
-	if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
-		$preview = get_posts( array(
-			'post_type'      => 'cb_listing',
-			'posts_per_page' => 1,
-			'post_status'    => 'publish',
-		) );
-
-		if ( empty( $preview ) ) {
+if ( ! $post_id || crocodevs_config('post_type.slug') !== get_post_type( $post_id ) ) {
+	$post_id = \CBListingAnything\Helpers\ListingHelper::get_preview_post_id();
+	if ( ! $post_id ) {
+		if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
 			echo '<p>' . esc_html__( 'No related listings found.', 'cb-listing-anything' ) . '</p>';
-			return;
 		}
-
-		$post_id = $preview[0]->ID;
-	} else {
 		return;
 	}
 }
@@ -37,43 +28,35 @@ $query        = null;
 $category_ids = array();
 $tag_ids      = array();
 
-$post_categories = get_the_terms( $post_id, 'cb_listing_category' );
+$post_categories = get_the_terms( $post_id, crocodevs_config('taxonomies.category') );
 if ( $post_categories && ! is_wp_error( $post_categories ) ) {
 	$category_ids = wp_list_pluck( $post_categories, 'term_id' );
 }
 
 if ( ! empty( $category_ids ) ) {
-	$query = new WP_Query( array(
-		'post_type'      => 'cb_listing',
-		'posts_per_page' => $per_page,
-		'post_status'    => 'publish',
-		'post__not_in'   => array( $post_id ),
-		'tax_query'      => array( array(
-			'taxonomy' => 'cb_listing_category',
-			'field'    => 'term_id',
-			'terms'    => $category_ids,
-		) ),
-	) );
+	$query = \CrocoDevs\Database\QueryBuilder::make()
+		->postType( crocodevs_config('post_type.slug') )
+		->perPage( $per_page )
+		->status( 'publish' )
+		->exclude( $post_id )
+		->whenTax( crocodevs_config('taxonomies.category'), 'term_id', $category_ids )
+		->get();
 }
 
 if ( ! $query || ! $query->have_posts() ) {
-	$post_tags = get_the_terms( $post_id, 'cb_listing_tag' );
+	$post_tags = get_the_terms( $post_id, crocodevs_config('taxonomies.tag') );
 	if ( $post_tags && ! is_wp_error( $post_tags ) ) {
 		$tag_ids = wp_list_pluck( $post_tags, 'term_id' );
 	}
 
 	if ( ! empty( $tag_ids ) ) {
-		$query = new WP_Query( array(
-			'post_type'      => 'cb_listing',
-			'posts_per_page' => $per_page,
-			'post_status'    => 'publish',
-			'post__not_in'   => array( $post_id ),
-			'tax_query'      => array( array(
-				'taxonomy' => 'cb_listing_tag',
-				'field'    => 'term_id',
-				'terms'    => $tag_ids,
-			) ),
-		) );
+		$query = \CrocoDevs\Database\QueryBuilder::make()
+			->postType( crocodevs_config('post_type.slug') )
+			->perPage( $per_page )
+			->status( 'publish' )
+			->exclude( $post_id )
+			->whenTax( crocodevs_config('taxonomies.tag'), 'term_id', $tag_ids )
+			->get();
 	}
 }
 
@@ -87,6 +70,6 @@ $wrapper = get_block_wrapper_attributes( array(
 ?>
 <div <?php echo $wrapper; ?>>
 	<?php while ( $query->have_posts() ) : $query->the_post();
-		include CB_LISTING_ANYTHING_PLUGIN_DIR . 'src/Views/partials/listing-card.php';
+		include crocodevs_view_path( 'partials/listing-card' );
 	endwhile; wp_reset_postdata(); ?>
 </div>

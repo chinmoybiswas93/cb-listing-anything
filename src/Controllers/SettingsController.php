@@ -2,8 +2,6 @@
 
 namespace CBListingAnything\Controllers;
 
-use CBListingAnything\Config\PostType as PostTypeConfig;
-use CBListingAnything\Config\Taxonomies as TaxonomiesConfig;
 use CBListingAnything\Core\AbstractController;
 use CBListingAnything\Models\ListingMeta as ListingMetaModel;
 
@@ -22,7 +20,7 @@ class SettingsController extends AbstractController {
 	public function fix_taxonomy_parent_menu( $parent_file ) {
 		$screen = get_current_screen();
 
-		if ( $screen && PostTypeConfig::POST_TYPE === $screen->post_type && in_array( $screen->taxonomy, array( TaxonomiesConfig::CATEGORY_TAXONOMY, TaxonomiesConfig::TAG_TAXONOMY ), true ) ) {
+		if ( $screen && crocodevs_config( 'post_type.slug' ) === $screen->post_type && in_array( $screen->taxonomy, array( crocodevs_config( 'taxonomies.category' ), crocodevs_config( 'taxonomies.tag' ) ), true ) ) {
 			return self::MENU_SLUG;
 		}
 
@@ -45,7 +43,7 @@ class SettingsController extends AbstractController {
 			__( 'Categories', 'cb-listing-anything' ),
 			__( 'Categories', 'cb-listing-anything' ),
 			'manage_categories',
-			'edit-tags.php?taxonomy=' . TaxonomiesConfig::CATEGORY_TAXONOMY . '&post_type=' . PostTypeConfig::POST_TYPE
+			'edit-tags.php?taxonomy=' . crocodevs_config( 'taxonomies.category' ) . '&post_type=' . crocodevs_config( 'post_type.slug' )
 		);
 
 		add_submenu_page(
@@ -53,7 +51,7 @@ class SettingsController extends AbstractController {
 			__( 'Tags', 'cb-listing-anything' ),
 			__( 'Tags', 'cb-listing-anything' ),
 			'manage_categories',
-			'edit-tags.php?taxonomy=' . TaxonomiesConfig::TAG_TAXONOMY . '&post_type=' . PostTypeConfig::POST_TYPE
+			'edit-tags.php?taxonomy=' . crocodevs_config( 'taxonomies.tag' ) . '&post_type=' . crocodevs_config( 'post_type.slug' )
 		);
 
 		add_submenu_page(
@@ -497,7 +495,7 @@ class SettingsController extends AbstractController {
 			return false;
 		}
 		foreach ( get_post_types( array(), 'objects' ) as $post_type ) {
-			if ( $post_type->name === PostTypeConfig::POST_TYPE ) {
+			if ( $post_type->name === crocodevs_config( 'post_type.slug' ) ) {
 				continue;
 			}
 			$rewrite_slug = isset( $post_type->rewrite['slug'] ) ? $post_type->rewrite['slug'] : $post_type->name;

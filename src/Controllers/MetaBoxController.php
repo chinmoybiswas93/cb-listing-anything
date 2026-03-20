@@ -2,7 +2,6 @@
 
 namespace CBListingAnything\Controllers;
 
-use CBListingAnything\Config\PostType as PostTypeConfig;
 use CBListingAnything\Core\AbstractController;
 use CBListingAnything\Models\ListingMeta;
 
@@ -19,7 +18,7 @@ class MetaBoxController extends AbstractController {
 			return;
 		}
 
-		if ( PostTypeConfig::POST_TYPE !== get_post_type() ) {
+		if ( crocodevs_config( 'post_type.slug' ) !== get_post_type() ) {
 			return;
 		}
 
@@ -218,7 +217,7 @@ class MetaBoxController extends AbstractController {
 			'listing_details',
 			__( 'Listing Details', 'cb-listing-anything' ),
 			array( $this, 'render_listing_details_meta_box' ),
-			PostTypeConfig::POST_TYPE,
+			crocodevs_config( 'post_type.slug' ),
 			'normal',
 			'high'
 		);
@@ -244,7 +243,7 @@ class MetaBoxController extends AbstractController {
 			}
 		}
 
-		include CB_LISTING_ANYTHING_PLUGIN_DIR . 'src/Views/admin/meta-box-listing-details.php';
+		include crocodevs_view_path( 'admin/meta-box-listing-details' );
 	}
 
 	public function save_meta_data( $post_id ) {
@@ -265,7 +264,7 @@ class MetaBoxController extends AbstractController {
 			return;
 		}
 
-		if ( PostTypeConfig::POST_TYPE !== get_post_type( $post_id ) ) {
+		if ( crocodevs_config( 'post_type.slug' ) !== get_post_type( $post_id ) ) {
 			return;
 		}
 

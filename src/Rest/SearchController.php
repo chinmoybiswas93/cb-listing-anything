@@ -2,13 +2,14 @@
 
 namespace CBListingAnything\Rest;
 
-use CBListingAnything\Config\PostType as PostTypeConfig;
-use CBListingAnything\Config\Taxonomies as TaxonomiesConfig;
 use CBListingAnything\Controllers\SettingsController;
+use CrocoDevs\Database\QueryBuilder;
+use CrocoDevs\Http\Response;
+use CrocoDevs\Validation\Validator;
 use WP_REST_Request;
 use WP_REST_Response;
 
-class SearchController {
+class SearchController extends AbstractRestController {
 
 	/**
 	 * Register REST routes.
@@ -16,7 +17,7 @@ class SearchController {
 	 * @return void
 	 */
 	public function register_routes() {
-		register_rest_route( 'cb-listing-anything/v1', '/search', array(
+		register_rest_route( $this->rest_namespace(), '/search', array(
 			'methods'             => 'GET',
 			'callback'            => array( $this, 'search_listings' ),
 			'permission_callback' => '__return_true',
@@ -42,34 +43,33 @@ class SearchController {
 	 * @return WP_REST_Response
 	 */
 	public function search_listings( WP_REST_Request $request ) {
-		$keyword  = $request->get_param( 'keyword' );
-		$category = $request->get_param( 'category' );
+		$data = $request->get_params();
+
+		$validation = Validator::make( $data, array(
+			'keyword'  => 'nullable|string|max:200',
+			'category' => 'nullable|integer',
+		) );
+
+		if ( $validation->fails() ) {
+			return Response::validationError( $validation->errors() );
+		}
+
+		$validated = $validation->validated();
+		$keyword   = isset( $validated['keyword'] ) ? $validated['keyword'] : '';
+		$category  = isset( $validated['category'] ) ? $validated['category'] : 0;
 
 		if ( empty( $keyword ) && empty( $category ) ) {
 			return new WP_REST_Response( array(), 200 );
 		}
 
-		$args = array(
-			'post_type'      => PostTypeConfig::POST_TYPE,
-			'post_status'    => 'publish',
-			'posts_per_page' => 8,
-		);
+		$query = QueryBuilder::make()
+			->postType( crocodevs_config( 'post_type.slug' ) )
+			->status( 'publish' )
+			->perPage( 8 )
+			->whenKeyword( (string) $keyword )
+			->whenTax( crocodevs_config( 'taxonomies.category' ), 'term_id', $category )
+			->get();
 
-		if ( ! empty( $keyword ) ) {
-			$args['s'] = $keyword;
-		}
-
-		if ( ! empty( $category ) ) {
-			$args['tax_query'] = array(
-				array(
-					'taxonomy' => TaxonomiesConfig::CATEGORY_TAXONOMY,
-					'field'    => 'term_id',
-					'terms'    => $category,
-				),
-			);
-		}
-
-		$query   = new \WP_Query( $args );
 		$results = array();
 
 		if ( $query->have_posts() ) {
@@ -79,7 +79,7 @@ class SearchController {
 				$thumb_url = get_the_post_thumbnail_url( $post_id, 'thumbnail' );
 				$location  = get_post_meta( $post_id, '_listing_location', true );
 				$price     = get_post_meta( $post_id, '_listing_price', true );
-				$cats      = get_the_terms( $post_id, TaxonomiesConfig::CATEGORY_TAXONOMY );
+				$cats      = get_the_terms( $post_id, crocodevs_config( 'taxonomies.category' ) );
 				$cat_name  = '';
 
 				if ( $cats && ! is_wp_error( $cats ) ) {

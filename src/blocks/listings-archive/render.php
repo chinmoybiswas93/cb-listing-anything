@@ -33,24 +33,16 @@ $per_page = absint( $attrs['postsPerPage'] );
 $columns  = max( 1, min( 4, absint( $attrs['columns'] ) ) );
 $columns_tablet = max( 1, min( 4, absint( isset( $attrs['columnsTablet'] ) ? $attrs['columnsTablet'] : 2 ) ) );
 $columns_mobile = max( 1, min( 4, absint( isset( $attrs['columnsMobile'] ) ? $attrs['columnsMobile'] : 1 ) ) );
-$paged_get = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 0;
-if ( ! $paged_get && isset( $_GET['page'] ) ) {
-	$paged_get = absint( $_GET['page'] );
-}
-if ( ! $paged_get && get_query_var( 'paged' ) ) {
-	$paged_get = absint( get_query_var( 'paged' ) );
-}
-$paged = max( 1, $paged_get );
 
 // Check if we're on a taxonomy archive page and get the current term
 $current_term = null;
 $is_category_archive = false;
 $is_tag_archive = false;
 
-if ( is_tax( 'cb_listing_category' ) ) {
+if ( is_tax( crocodevs_config('taxonomies.category') ) ) {
 	$current_term = get_queried_object();
 	$is_category_archive = true;
-} elseif ( is_tax( 'cb_listing_tag' ) ) {
+} elseif ( is_tax( crocodevs_config('taxonomies.tag') ) ) {
 	$current_term = get_queried_object();
 	$is_tag_archive = true;
 }
@@ -59,11 +51,11 @@ if ( is_tax( 'cb_listing_category' ) ) {
 $parent_terms       = array();
 $current_parent     = null;
 $subcategory_terms   = array();
-$all_tab_url        = get_post_type_archive_link( 'cb_listing' );
+$all_tab_url        = get_post_type_archive_link( crocodevs_config('post_type.slug') );
 if ( ! empty( $attrs['showCategoryTabs'] ) ) {
 	$hide_empty_cats = empty( $attrs['showEmptyCategories'] );
 	$all_cat_terms = get_terms( array(
-		'taxonomy'   => 'cb_listing_category',
+		'taxonomy'   => crocodevs_config('taxonomies.category'),
 		'hide_empty' => $hide_empty_cats,
 		'orderby'    => 'term_id',
 		'order'      => 'ASC',
@@ -75,14 +67,14 @@ if ( ! empty( $attrs['showCategoryTabs'] ) ) {
 		if ( 0 === (int) $current_term->parent ) {
 			$current_parent = $current_term;
 		} else {
-			$current_parent = get_term( (int) $current_term->parent, 'cb_listing_category' );
+			$current_parent = get_term( (int) $current_term->parent, crocodevs_config('taxonomies.category') );
 			if ( is_wp_error( $current_parent ) || ! $current_parent ) {
 				$current_parent = $current_term;
 			}
 		}
 		if ( $current_parent && ! empty( $attrs['showSubcategoryButtons'] ) ) {
 			$subcategory_terms = get_terms( array(
-				'taxonomy'   => 'cb_listing_category',
+				'taxonomy'   => crocodevs_config('taxonomies.category'),
 				'parent'     => $current_parent->term_id,
 				'hide_empty' => $hide_empty_cats,
 				'orderby'    => 'term_id',
@@ -95,125 +87,18 @@ if ( ! empty( $attrs['showCategoryTabs'] ) ) {
 	}
 }
 
-// Get filter values from URL, or use current term if on taxonomy archive
-$filter_cat = isset( $_GET['listing_category'] ) ? $_GET['listing_category'] : array();
-if ( ! is_array( $filter_cat ) ) {
-	$filter_cat = $filter_cat ? array( absint( $filter_cat ) ) : array();
-} else {
-	$filter_cat = array_map( 'absint', array_filter( $filter_cat ) );
-}
-
-// If on category archive and no explicit filter, use current category
-if ( $is_category_archive && $current_term && empty( $filter_cat ) ) {
-	$filter_cat = array( $current_term->term_id );
-}
-
-$filter_tag = isset( $_GET['listing_tag'] ) ? $_GET['listing_tag'] : array();
-if ( ! is_array( $filter_tag ) ) {
-	$filter_tag = $filter_tag ? array( absint( $filter_tag ) ) : array();
-} else {
-	$filter_tag = array_map( 'absint', array_filter( $filter_tag ) );
-}
-
-// If on tag archive and no explicit filter, use current tag
-if ( $is_tag_archive && $current_term && empty( $filter_tag ) ) {
-	$filter_tag = array( $current_term->term_id );
-}
-$price_min = isset( $_GET['price_min'] ) ? absint( preg_replace( '/[^0-9]/', '', wp_unslash( $_GET['price_min'] ) ) ) : 0;
-$price_max = isset( $_GET['price_max'] ) ? absint( preg_replace( '/[^0-9]/', '', wp_unslash( $_GET['price_max'] ) ) ) : 0;
-$orderby   = isset( $_GET['orderby'] ) ? sanitize_key( $_GET['orderby'] ) : $attrs['orderBy'];
-$allowed   = array( 'date', 'date_asc', 'title', 'price_asc', 'price_desc' );
-if ( ! in_array( $orderby, $allowed, true ) ) {
-	$orderby = 'date';
-}
-
-$query_args = array(
-	'post_type'      => 'cb_listing',
-	'post_status'    => 'publish',
-	'posts_per_page' => $per_page,
-	'paged'          => $paged,
-);
-
-$tax_clauses = array();
-if ( ! empty( $filter_cat ) ) {
-	$tax_clauses[] = array(
-		'taxonomy' => 'cb_listing_category',
-		'field'    => 'term_id',
-		'terms'    => $filter_cat,
-	);
-}
-if ( ! empty( $filter_tag ) ) {
-	$tax_clauses[] = array(
-		'taxonomy' => 'cb_listing_tag',
-		'field'    => 'term_id',
-		'terms'    => $filter_tag,
-	);
-}
-if ( count( $tax_clauses ) > 1 ) {
-	$query_args['tax_query'] = array_merge( array( 'relation' => 'AND' ), $tax_clauses );
-} elseif ( ! empty( $tax_clauses ) ) {
-	$query_args['tax_query'] = $tax_clauses;
-}
-
-$meta_clauses = array();
-if ( $price_min > 0 || $price_max > 0 ) {
-	if ( $price_min > 0 && $price_max > 0 ) {
-		$meta_clauses[] = array(
-			'key'     => '_listing_price',
-			'value'   => array( $price_min, $price_max ),
-			'type'    => 'NUMERIC',
-			'compare' => 'BETWEEN',
-		);
-	} elseif ( $price_min > 0 ) {
-		$meta_clauses[] = array(
-			'key'     => '_listing_price',
-			'value'   => $price_min,
-			'type'    => 'NUMERIC',
-			'compare' => '>=',
-		);
-	} else {
-		$meta_clauses[] = array(
-			'key'     => '_listing_price',
-			'value'   => $price_max,
-			'type'    => 'NUMERIC',
-			'compare' => '<=',
-		);
-	}
-}
-if ( ! empty( $meta_clauses ) ) {
-	$query_args['meta_query'] = $meta_clauses;
-}
-
-switch ( $orderby ) {
-	case 'date_asc':
-		$query_args['orderby'] = 'date';
-		$query_args['order']   = 'ASC';
-		break;
-	case 'title':
-		$query_args['orderby'] = 'title';
-		$query_args['order']   = 'ASC';
-		break;
-	case 'price_asc':
-		$query_args['orderby']  = 'meta_value_num';
-		$query_args['meta_key'] = '_listing_price';
-		$query_args['order']    = 'ASC';
-		break;
-	case 'price_desc':
-		$query_args['orderby']  = 'meta_value_num';
-		$query_args['meta_key'] = '_listing_price';
-		$query_args['order']    = 'DESC';
-		break;
-	default:
-		$query_args['orderby'] = 'date';
-		$query_args['order']   = 'DESC';
-		break;
-}
-
-$query = new WP_Query( $query_args );
+$filters    = \CBListingAnything\Helpers\ArchiveHelper::parse_filters( $is_category_archive, $is_tag_archive, $current_term, $attrs['orderBy'] );
+$filter_cat = $filters['filter_cat'];
+$filter_tag = $filters['filter_tag'];
+$price_min  = $filters['price_min'];
+$price_max  = $filters['price_max'];
+$orderby    = $filters['orderby'];
+$paged      = $filters['paged'];
+$query      = \CBListingAnything\Helpers\ArchiveHelper::build_query( $filters, $per_page );
 
 // Determine the base URL for forms and pagination
-if ( is_post_type_archive( 'cb_listing' ) ) {
-	$archive_url = get_post_type_archive_link( 'cb_listing' );
+if ( is_post_type_archive( crocodevs_config('post_type.slug') ) ) {
+	$archive_url = get_post_type_archive_link( crocodevs_config('post_type.slug') );
 	global $wp;
 	$current_path = untrailingslashit( $wp->request );
 	if ( $current_path ) {
@@ -226,11 +111,11 @@ if ( is_post_type_archive( 'cb_listing' ) ) {
 	// On taxonomy archive, use the term archive URL
 	$form_action = get_term_link( $current_term );
 	if ( is_wp_error( $form_action ) ) {
-		$form_action = get_post_type_archive_link( 'cb_listing' );
+		$form_action = get_post_type_archive_link( crocodevs_config('post_type.slug') );
 	}
 	$form_action = remove_query_arg( array( 'paged', 'page', 'listing_category', 'listing_tag', 'price_min', 'price_max', 'orderby' ), $form_action );
 } else {
-	$archive_url = get_post_type_archive_link( 'cb_listing' );
+	$archive_url = get_post_type_archive_link( crocodevs_config('post_type.slug') );
 	$form_action = $archive_url;
 }
 
@@ -357,7 +242,7 @@ $is_all_archive = ! $is_category_archive && ! $is_tag_archive;
 			</div>
 			<form method="get" action="<?php echo esc_url( $form_action ); ?>" class="cb-listings-archive__filters-form">
 				<?php if ( ! empty( $attrs['showFilterTag'] ) ) :
-					$tag_terms = get_terms( array( 'taxonomy' => 'cb_listing_tag', 'hide_empty' => true ) );
+					$tag_terms = get_terms( array( 'taxonomy' => crocodevs_config('taxonomies.tag'), 'hide_empty' => true ) );
 					if ( ! is_wp_error( $tag_terms ) && ! empty( $tag_terms ) ) :
 				?>
 				<div class="cb-listings-archive__filter-section">
@@ -440,9 +325,9 @@ $is_all_archive = ! $is_category_archive && ! $is_tag_archive;
 					while ( $query->have_posts() ) {
 						$query->the_post();
 						if ( $card_template === 'product-card' ) {
-							include CB_LISTING_ANYTHING_PLUGIN_DIR . 'src/Views/partials/product-card.php';
+							include crocodevs_view_path( 'partials/product-card' );
 						} else {
-							include CB_LISTING_ANYTHING_PLUGIN_DIR . 'src/Views/partials/listing-card.php';
+							include crocodevs_view_path( 'partials/listing-card' );
 						}
 					}
 					wp_reset_postdata();

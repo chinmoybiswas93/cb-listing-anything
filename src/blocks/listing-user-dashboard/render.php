@@ -5,6 +5,7 @@
  * @package CBListingAnything
  */
 
+use CBListingAnything\Controllers\UserDashboardController;
 use CBListingAnything\Models\ListingMeta;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,35 +13,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Handle login submissions when user is not logged in.
-$login_errors   = array();
-$login_username = '';
-
-if ( ! is_user_logged_in() && 'POST' === $_SERVER['REQUEST_METHOD'] && isset( $_POST['cb_listing_user_dashboard_login'] ) && '1' === $_POST['cb_listing_user_dashboard_login'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	$login_username = isset( $_POST['log'] ) ? sanitize_user( wp_unslash( $_POST['log'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	$login_password = isset( $_POST['pwd'] ) ? wp_unslash( $_POST['pwd'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-
-	if ( ! isset( $_POST['_cb_listing_login_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_cb_listing_login_nonce'] ) ), 'cb_listing_user_login' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$login_errors[] = __( 'Security check failed. Please try again.', 'cb-listing-anything' );
-	} elseif ( '' === $login_username || '' === $login_password ) {
-		$login_errors[] = __( 'Please enter both username (or email) and password.', 'cb-listing-anything' );
-	} else {
-		$creds = array(
-			'user_login'    => $login_username,
-			'user_password' => $login_password,
-			'remember'      => ! empty( $_POST['rememberme'] ), // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		);
-
-		// Let WordPress decide whether to use a secure cookie based on the current context.
-		$user = wp_signon( $creds );
-
-		if ( is_wp_error( $user ) ) {
-			$login_errors[] = $user->get_error_message();
-		} else {
-			wp_safe_redirect( get_permalink() );
-			exit;
-		}
-	}
-}
+$login_result   = ! is_user_logged_in() ? UserDashboardController::handle_login() : array( 'errors' => array(), 'username' => '' );
+$login_errors   = $login_result['errors'];
+$login_username = $login_result['username'];
 
 $wrapper = get_block_wrapper_attributes(
 	array(
@@ -120,39 +95,16 @@ $base_url = remove_query_arg(
 	)
 );
 
-// Initialise form state.
-$errors            = array();
-$success_message   = '';
-$form_title        = '';
-$form_content      = '';
-$form_category_id  = 0;
-$form_tag_ids      = array();
-$form_tags_other   = '';
-$form_featured_id  = 0;
-$form_price        = '';
-
 // Meta fields mirror the admin meta box configuration.
-$meta_field_keys  = ListingMeta::fields();
-$form_meta        = array();
-
-foreach ( $meta_field_keys as $field_key ) {
-	if ( ListingMeta::is_array_field( $field_key ) ) {
-		$form_meta[ $field_key ] = array();
-	} else {
-		$form_meta[ $field_key ] = '';
-	}
-}
+$meta_field_keys = ListingMeta::fields();
 
 // Detect edit context from query string.
 $editing_post_id = 0;
-
 if ( isset( $_GET['edit_listing'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	$maybe_id = absint( wp_unslash( $_GET['edit_listing'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-
 	if ( $maybe_id ) {
 		$maybe_post = get_post( $maybe_id );
-
-		if ( $maybe_post && 'cb_listing' === $maybe_post->post_type ) {
+		if ( $maybe_post && crocodevs_config('post_type.slug') === $maybe_post->post_type ) {
 			if ( current_user_can( 'manage_options' ) || (int) $maybe_post->post_author === (int) $current_user->ID ) {
 				$editing_post_id = $maybe_id;
 			}
@@ -160,269 +112,51 @@ if ( isset( $_GET['edit_listing'] ) ) { // phpcs:ignore WordPress.Security.Nonce
 	}
 }
 
-// If user clicked Edit from listings tab, switch to Add tab to reuse the form.
 if ( $editing_post_id && 'listings' === $tab ) {
 	$tab = 'add';
 }
 
-// Handle dashboard actions (e.g., delete listing) regardless of active tab.
-if ( 'POST' === $_SERVER['REQUEST_METHOD'] && ! ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	$dashboard_action = isset( $_POST['cb_listing_user_dashboard_action'] ) ? sanitize_key( wp_unslash( $_POST['cb_listing_user_dashboard_action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+// Handle delete action (may redirect and exit).
+UserDashboardController::handle_delete( $base_url );
 
-	if ( 'delete_listing' === $dashboard_action ) {
-		$delete_post_id = isset( $_POST['cb_listing_post_id'] ) ? absint( wp_unslash( $_POST['cb_listing_post_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-
-		if ( ! isset( $_POST['_cb_listing_delete_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_cb_listing_delete_nonce'] ) ), 'cb_listing_delete_listing' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			set_transient( 'cb_listing_anything_dashboard_notice_' . get_current_user_id(), 'delete_failed', MINUTE_IN_SECONDS );
-			$redirect_url = add_query_arg( 'tab', 'listings', $base_url );
-			wp_safe_redirect( $redirect_url );
-			exit;
-		}
-
-		if ( $delete_post_id && current_user_can( 'delete_post', $delete_post_id ) ) {
-			wp_trash_post( $delete_post_id );
-
-			set_transient( 'cb_listing_anything_dashboard_notice_' . get_current_user_id(), 'deleted', MINUTE_IN_SECONDS );
-			$redirect_url = add_query_arg( 'tab', 'listings', $base_url );
-			wp_safe_redirect( $redirect_url );
-			exit;
-		}
-
-		set_transient( 'cb_listing_anything_dashboard_notice_' . get_current_user_id(), 'delete_failed', MINUTE_IN_SECONDS );
-		$redirect_url = add_query_arg( 'tab', 'listings', $base_url );
-		wp_safe_redirect( $redirect_url );
-		exit;
-	}
+// Handle add/edit submission.
+$form_state = null;
+if ( 'add' === $tab ) {
+	$form_state = UserDashboardController::handle_submission( $can_submit, $editing_post_id, $meta_field_keys );
 }
 
-// Handle Add / Edit Listing form submission.
-if ( 'add' === $tab && 'POST' === $_SERVER['REQUEST_METHOD'] && ! ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	$dashboard_action = isset( $_POST['cb_listing_user_dashboard_action'] ) ? sanitize_key( wp_unslash( $_POST['cb_listing_user_dashboard_action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-
-	if ( in_array( $dashboard_action, array( 'add_listing', 'edit_listing' ), true ) ) {
-		if ( ! isset( $_POST['_cb_listing_add_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_cb_listing_add_nonce'] ) ), 'cb_listing_add_listing' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$errors[] = __( 'Security check failed. Please try again.', 'cb-listing-anything' );
-		} elseif ( ! $can_submit ) {
-			$errors[] = __( 'You are not allowed to submit listings from this account.', 'cb-listing-anything' );
-		} else {
-			$form_title       = isset( $_POST['cb_listing_title'] ) ? sanitize_text_field( wp_unslash( $_POST['cb_listing_title'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$form_content     = isset( $_POST['cb_listing_content'] ) ? wp_kses_post( wp_unslash( $_POST['cb_listing_content'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$form_category_id = isset( $_POST['cb_listing_category'] ) ? absint( $_POST['cb_listing_category'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$form_tag_ids     = isset( $_POST['cb_listing_tags'] ) && is_array( $_POST['cb_listing_tags'] ) ? array_map( 'absint', wp_unslash( $_POST['cb_listing_tags'] ) ) : array(); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$form_tags_other  = isset( $_POST['cb_listing_tags_other'] ) ? sanitize_text_field( wp_unslash( $_POST['cb_listing_tags_other'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$form_featured_id = isset( $_POST['cb_listing_featured_image_id'] ) ? absint( wp_unslash( $_POST['cb_listing_featured_image_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-
-			// Populate meta values from request.
-			foreach ( $meta_field_keys as $field_key ) {
-				if ( 'listing_working_days' === $field_key ) {
-					$raw_value = isset( $_POST['listing_working_days'] ) && is_array( $_POST['listing_working_days'] ) ? wp_unslash( $_POST['listing_working_days'] ) : array(); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-				} elseif ( isset( $_POST[ $field_key ] ) ) {
-					$raw_value = wp_unslash( $_POST[ $field_key ] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-				} elseif ( 'listing_price' === $field_key && isset( $_POST['cb_listing_price'] ) ) {
-					// Back-compat with previous price field name.
-					$raw_value = wp_unslash( $_POST['cb_listing_price'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-				} else {
-					$raw_value = ListingMeta::is_array_field( $field_key ) ? array() : '';
-				}
-
-				$form_meta[ $field_key ] = ListingMeta::sanitize( $field_key, $raw_value );
-			}
-
-			// Normalise price alias for existing form code.
-			$form_price = isset( $form_meta['listing_price'] ) ? $form_meta['listing_price'] : '';
-
-			if ( '' === $form_title ) {
-				$errors[] = __( 'Please enter a title for your listing.', 'cb-listing-anything' );
-			}
-
-			// Process \"Other\" comma-separated tags into real terms.
-			if ( '' !== $form_tags_other ) {
-				$extra_tag_ids = array();
-				$raw_tags      = explode( ',', $form_tags_other );
-
-				foreach ( $raw_tags as $raw_tag ) {
-					$tag_name = trim( $raw_tag );
-
-					if ( '' === $tag_name ) {
-						continue;
-					}
-
-					$existing = get_term_by( 'name', $tag_name, 'cb_listing_tag' );
-
-					if ( $existing && ! is_wp_error( $existing ) ) {
-						$extra_tag_ids[] = (int) $existing->term_id;
-					} else {
-						$created = wp_insert_term( $tag_name, 'cb_listing_tag' );
-
-						if ( ! is_wp_error( $created ) && isset( $created['term_id'] ) ) {
-							$extra_tag_ids[] = (int) $created['term_id'];
-						}
-					}
-				}
-
-				if ( ! empty( $extra_tag_ids ) ) {
-					$form_tag_ids = array_unique( array_merge( $form_tag_ids, $extra_tag_ids ) );
-				}
-			}
-
-			if ( empty( $errors ) ) {
-				$post_id = 0;
-
-				if ( 'edit_listing' === $dashboard_action ) {
-					// For edits, trust the hidden post ID and re-validate permissions.
-					$editing_post_id = isset( $_POST['cb_listing_post_id'] ) ? absint( wp_unslash( $_POST['cb_listing_post_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-
-					if ( $editing_post_id ) {
-						$existing_post = get_post( $editing_post_id );
-
-						if ( $existing_post && 'cb_listing' === $existing_post->post_type && ( current_user_can( 'manage_options' ) || (int) $existing_post->post_author === (int) $current_user->ID ) ) {
-							$post_id = $editing_post_id;
-
-							$update_result = wp_update_post(
-								array(
-									'ID'           => $post_id,
-									'post_title'   => $form_title,
-									'post_content' => $form_content,
-								),
-								true
-							);
-
-							if ( is_wp_error( $update_result ) ) {
-								$errors[] = $update_result->get_error_message();
-							}
-						} else {
-							$errors[] = __( 'You are not allowed to edit this listing.', 'cb-listing-anything' );
-						}
-					} else {
-						$errors[] = __( 'Invalid listing specified for editing.', 'cb-listing-anything' );
-					}
-				} else {
-					$post_id = wp_insert_post(
-						array(
-							'post_type'    => 'cb_listing',
-							'post_title'   => $form_title,
-							'post_content' => $form_content,
-							'post_status'  => 'pending',
-							'post_author'  => get_current_user_id(),
-						),
-						true
-					);
-
-					if ( is_wp_error( $post_id ) ) {
-						$errors[] = $post_id->get_error_message();
-					}
-				}
-
-			}
-
-			if ( empty( $errors ) && $post_id ) {
-				// Sync taxonomies.
-				if ( $form_category_id ) {
-					wp_set_object_terms( $post_id, array( $form_category_id ), 'cb_listing_category', false );
-				} else {
-					wp_set_object_terms( $post_id, array(), 'cb_listing_category', false );
-				}
-
-				if ( ! empty( $form_tag_ids ) ) {
-					wp_set_object_terms( $post_id, $form_tag_ids, 'cb_listing_tag', false );
-				} else {
-					wp_set_object_terms( $post_id, array(), 'cb_listing_tag', false );
-				}
-
-				// Sync meta fields using shared config.
-				foreach ( $meta_field_keys as $field_key ) {
-					$meta_key   = ListingMeta::key( $field_key );
-					$meta_value = isset( $form_meta[ $field_key ] ) ? $form_meta[ $field_key ] : '';
-
-					if ( ListingMeta::is_array_field( $field_key ) ) {
-						$meta_value = is_array( $meta_value ) ? array_values( $meta_value ) : array();
-						update_post_meta( $post_id, $meta_key, $meta_value );
-					} else {
-						if ( '' !== $meta_value ) {
-							update_post_meta( $post_id, $meta_key, $meta_value );
-						} else {
-							delete_post_meta( $post_id, $meta_key );
-						}
-					}
-				}
-
-				// Sync featured image.
-				if ( $form_featured_id ) {
-					set_post_thumbnail( $post_id, $form_featured_id );
-				} else {
-					delete_post_thumbnail( $post_id );
-				}
-
-				if ( 'edit_listing' === $dashboard_action ) {
-					$success_message = __( 'Listing updated.', 'cb-listing-anything' );
-				} else {
-					$success_message  = __( 'Listing submitted for review.', 'cb-listing-anything' );
-					$form_title       = '';
-					$form_content     = '';
-					$form_category_id = 0;
-					$form_tag_ids     = array();
-					$form_tags_other  = '';
-					$form_featured_id = 0;
-
-					foreach ( $meta_field_keys as $field_key ) {
-						if ( ListingMeta::is_array_field( $field_key ) ) {
-							$form_meta[ $field_key ] = array();
-						} else {
-							$form_meta[ $field_key ] = '';
-						}
-					}
-				}
-			}
-		}
-	}
+// Pre-populate form from existing listing on initial load.
+if ( ! $form_state && $editing_post_id && 'add' === $tab ) {
+	$form_state = UserDashboardController::prepopulate_form( $editing_post_id, $meta_field_keys );
 }
 
-// When editing an existing listing, pre-populate the form from its current data on initial load.
-if ( $editing_post_id && 'add' === $tab && 'POST' !== $_SERVER['REQUEST_METHOD'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	$existing_post = get_post( $editing_post_id );
+// Unpack form state into local variables used by the template below.
+$errors           = array();
+$success_message  = '';
+$form_title       = '';
+$form_content     = '';
+$form_category_id = 0;
+$form_tag_ids     = array();
+$form_tags_other  = '';
+$form_featured_id = 0;
+$form_price       = '';
+$form_meta        = array();
+foreach ( $meta_field_keys as $fk ) {
+	$form_meta[ $fk ] = ListingMeta::is_array_field( $fk ) ? array() : '';
+}
 
-	if ( $existing_post && 'cb_listing' === $existing_post->post_type ) {
-		$form_title       = $existing_post->post_title;
-		$form_content     = $existing_post->post_content;
-		$form_featured_id = (int) get_post_thumbnail_id( $existing_post );
-
-		$existing_categories = wp_get_object_terms(
-			$editing_post_id,
-			'cb_listing_category',
-			array(
-				'fields' => 'ids',
-			)
-		);
-
-		if ( ! is_wp_error( $existing_categories ) && ! empty( $existing_categories ) ) {
-			$form_category_id = (int) $existing_categories[0];
-		}
-
-		$existing_tags = wp_get_object_terms(
-			$editing_post_id,
-			'cb_listing_tag',
-			array(
-				'fields' => 'ids',
-			)
-		);
-
-		if ( ! is_wp_error( $existing_tags ) ) {
-			$form_tag_ids = array_map( 'intval', $existing_tags );
-		}
-
-		foreach ( $meta_field_keys as $field_key ) {
-			$meta_key   = ListingMeta::key( $field_key );
-			$meta_value = get_post_meta( $editing_post_id, $meta_key, true );
-
-			if ( ListingMeta::is_array_field( $field_key ) ) {
-				$form_meta[ $field_key ] = is_array( $meta_value ) ? $meta_value : array();
-			} else {
-				$form_meta[ $field_key ] = is_string( $meta_value ) ? $meta_value : (string) $meta_value;
-			}
-		}
-
-		$form_price = isset( $form_meta['listing_price'] ) ? $form_meta['listing_price'] : '';
-	}
+if ( $form_state ) {
+	$errors           = $form_state['errors'];
+	$success_message  = $form_state['success_message'];
+	$form_title       = $form_state['form_title'];
+	$form_content     = $form_state['form_content'];
+	$form_category_id = $form_state['form_category_id'];
+	$form_tag_ids     = $form_state['form_tag_ids'];
+	$form_tags_other  = $form_state['form_tags_other'];
+	$form_featured_id = $form_state['form_featured_id'];
+	$form_price       = $form_state['form_price'];
+	$form_meta        = $form_state['form_meta'];
+	$editing_post_id  = $form_state['editing_post_id'];
 }
 
 // Preload taxonomies for the add tab form.
@@ -430,26 +164,22 @@ $categories = array();
 $tags       = array();
 
 if ( 'add' === $tab ) {
-	$category_terms = get_terms(
-		array(
-			'taxonomy'   => 'cb_listing_category',
-			'hide_empty' => false,
-			'orderby'    => 'name',
-			'order'      => 'ASC',
-		)
-	);
+	$category_terms = get_terms( array(
+		'taxonomy'   => crocodevs_config('taxonomies.category'),
+		'hide_empty' => false,
+		'orderby'    => 'name',
+		'order'      => 'ASC',
+	) );
 	if ( ! is_wp_error( $category_terms ) ) {
 		$categories = $category_terms;
 	}
 
-	$tag_terms = get_terms(
-		array(
-			'taxonomy'   => 'cb_listing_tag',
-			'hide_empty' => false,
-			'orderby'    => 'name',
-			'order'      => 'ASC',
-		)
-	);
+	$tag_terms = get_terms( array(
+		'taxonomy'   => crocodevs_config('taxonomies.tag'),
+		'hide_empty' => false,
+		'orderby'    => 'name',
+		'order'      => 'ASC',
+	) );
 	if ( ! is_wp_error( $tag_terms ) ) {
 		$tags = $tag_terms;
 	}
@@ -1442,17 +1172,14 @@ JS;
 					<?php
 					$paged = isset( $_GET['cbld_page'] ) ? max( 1, absint( $_GET['cbld_page'] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
-					$listings_query = new WP_Query(
-						array(
-							'post_type'      => 'cb_listing',
-							'post_status'    => array( 'pending', 'publish', 'draft', 'trash' ),
-							'author'         => get_current_user_id(),
-							'posts_per_page' => 10,
-							'paged'          => $paged,
-							'orderby'        => 'date',
-							'order'          => 'DESC',
-						)
-					);
+				$listings_query = \CrocoDevs\Database\QueryBuilder::make()
+					->postType( crocodevs_config('post_type.slug') )
+					->status( array( 'pending', 'publish', 'draft', 'trash' ) )
+					->author( get_current_user_id() )
+					->perPage( 10 )
+					->page( $paged )
+					->orderBy( 'date', 'DESC' )
+					->get();
 
 					if ( $listings_query->have_posts() ) :
 						?>

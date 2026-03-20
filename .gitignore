@@ -1,8 +1,15 @@
 node_modules/
-build/
-vendor/
 
-# OS files
+build/
+
+vendor/*
+!vendor/crocodevs/
+!vendor/crocodevs/framework/
+!vendor/crocodevs/framework/**
+!vendor/composer/
+!vendor/symfony/
+!vendor/autoload.php
+
 .DS_Store
 Thumbs.db
 

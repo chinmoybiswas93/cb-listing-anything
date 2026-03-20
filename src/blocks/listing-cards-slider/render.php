@@ -27,34 +27,20 @@ $show_call_button = isset( $attributes['showCallButton'] ) ? (bool) $attributes[
 // Build the query similar to listings-card block.
 if ( $use_current_query && ! ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) {
 	global $wp_query;
-
-	$args = array_merge(
-		$wp_query->query_vars,
-		array(
-			'post_type'      => 'cb_listing',
-			'posts_per_page' => $per_page,
-			'post_status'    => 'publish',
-		)
-	);
-	$query = new WP_Query( $args );
+	$query = \CrocoDevs\Database\QueryBuilder::make( $wp_query->query_vars )
+		->postType( crocodevs_config('post_type.slug') )
+		->perPage( $per_page )
+		->status( 'publish' )
+		->get();
 } else {
-	$args = array(
-		'post_type'      => 'cb_listing',
-		'posts_per_page' => $per_page,
-		'post_status'    => 'publish',
-	);
-
+	$builder = \CrocoDevs\Database\QueryBuilder::make()
+		->postType( crocodevs_config('post_type.slug') )
+		->perPage( $per_page )
+		->status( 'publish' );
 	if ( ! $use_current_query && $category_filter > 0 ) {
-		$args['tax_query'] = array(
-			array(
-				'taxonomy' => 'cb_listing_category',
-				'field'    => 'term_id',
-				'terms'    => $category_filter,
-			),
-		);
+		$builder->whenTax( crocodevs_config('taxonomies.category'), 'term_id', $category_filter );
 	}
-
-	$query = new WP_Query( $args );
+	$query = $builder->get();
 }
 
 if ( ! $query->have_posts() ) {
@@ -136,7 +122,7 @@ $wrapper = get_block_wrapper_attributes(
 				$query->the_post();
 				?>
 				<div class="cb-categories-slider__item">
-					<?php include CB_LISTING_ANYTHING_PLUGIN_DIR . 'src/Views/partials/listing-card.php'; ?>
+					<?php include crocodevs_view_path( 'partials/listing-card' ); ?>
 				</div>
 			<?php endwhile; wp_reset_postdata(); ?>
 			<?php unset( $GLOBALS['cb_listing_anything_card_settings'] ); ?>
