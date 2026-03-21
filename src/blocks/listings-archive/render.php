@@ -34,7 +34,6 @@ $columns  = max( 1, min( 4, absint( $attrs['columns'] ) ) );
 $columns_tablet = max( 1, min( 4, absint( isset( $attrs['columnsTablet'] ) ? $attrs['columnsTablet'] : 2 ) ) );
 $columns_mobile = max( 1, min( 4, absint( isset( $attrs['columnsMobile'] ) ? $attrs['columnsMobile'] : 1 ) ) );
 
-// Check if we're on a taxonomy archive page and get the current term
 $current_term = null;
 $is_category_archive = false;
 $is_tag_archive = false;
@@ -96,7 +95,6 @@ $orderby    = $filters['orderby'];
 $paged      = $filters['paged'];
 $query      = \CBListingAnything\Helpers\ArchiveHelper::build_query( $filters, $per_page );
 
-// Determine the base URL for forms and pagination
 if ( is_post_type_archive( crocodevs_config('post_type.slug') ) ) {
 	$archive_url = get_post_type_archive_link( crocodevs_config('post_type.slug') );
 	global $wp;
@@ -108,7 +106,6 @@ if ( is_post_type_archive( crocodevs_config('post_type.slug') ) ) {
 	}
 	$form_action = remove_query_arg( array( 'paged', 'page', 'listing_category', 'listing_tag', 'price_min', 'price_max', 'orderby' ), $form_action );
 } elseif ( $is_category_archive || $is_tag_archive ) {
-	// On taxonomy archive, use the term archive URL
 	$form_action = get_term_link( $current_term );
 	if ( is_wp_error( $form_action ) ) {
 		$form_action = get_post_type_archive_link( crocodevs_config('post_type.slug') );
@@ -136,11 +133,9 @@ if ( $orderby !== 'date' ) {
 	$base_args['orderby'] = $orderby;
 }
 
-// Build pagination base URL using query params only
 $pagination_base = $form_action;
 $pagination_base = remove_query_arg( array( 'paged', 'page' ), $pagination_base );
 
-// Add current filter params to pagination base first
 if ( ! empty( $base_args ) ) {
 	foreach ( $base_args as $key => $value ) {
 		if ( is_array( $value ) ) {
@@ -153,7 +148,6 @@ if ( ! empty( $base_args ) ) {
 	}
 }
 
-// Add paged parameter format
 $sep = strpos( $pagination_base, '?' ) !== false ? '&' : '?';
 $pagination_base .= $sep . 'paged=%#%';
 
@@ -248,7 +242,6 @@ $is_all_archive = ! $is_category_archive && ! $is_tag_archive;
 				<div class="cb-listings-archive__filter-section">
 					<h4 class="cb-listings-archive__filter-heading"><?php esc_html_e( 'Tag', 'cb-listing-anything' ); ?></h4>
 					<?php foreach ( $tag_terms as $term ) : 
-						// Check if this term is in the filter array or is the current archive term
 						$is_checked = in_array( $term->term_id, $filter_tag, true );
 						if ( ! $is_checked && $is_tag_archive && $current_term && $current_term->term_id === $term->term_id ) {
 							$is_checked = true;

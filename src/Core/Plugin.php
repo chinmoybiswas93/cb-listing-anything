@@ -88,9 +88,6 @@ class Plugin {
 		return self::$instance;
 	}
 
-	/**
-	 * Plugin constructor.
-	 */
 	private function __construct() {
 		$this->post_type_controller      = ServiceManager::get( 'cb.listing.post_type_controller' ) ?: new PostTypeController();
 		$this->taxonomy_controller       = ServiceManager::get( 'cb.listing.taxonomy_controller' ) ?: new TaxonomyController();

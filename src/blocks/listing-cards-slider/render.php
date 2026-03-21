@@ -3,7 +3,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Slider attributes.
 $items_to_show_legacy   = isset( $attributes['itemsToShow'] ) ? absint( $attributes['itemsToShow'] ) : 4;
 $items_to_show_desktop  = isset( $attributes['itemsToShowDesktop'] ) ? absint( $attributes['itemsToShowDesktop'] ) : $items_to_show_legacy;
 $items_to_show_tablet   = isset( $attributes['itemsToShowTablet'] ) ? absint( $attributes['itemsToShowTablet'] ) : 2;
@@ -11,7 +10,6 @@ $items_to_show_mobile   = isset( $attributes['itemsToShowMobile'] ) ? absint( $a
 $button_position      = isset( $attributes['buttonPosition'] ) && 'inside' === $attributes['buttonPosition'] ? 'inside' : 'outside';
 $button_outside_offset = isset( $attributes['buttonOutsideOffset'] ) ? (int) $attributes['buttonOutsideOffset'] : 0;
 
-// Listing query attributes.
 $use_current_query = isset( $attributes['useCurrentQuery'] ) ? (bool) $attributes['useCurrentQuery'] : false;
 $per_page          = isset( $attributes['postsPerPage'] ) ? absint( $attributes['postsPerPage'] ) : 8;
 $category_filter   = isset( $attributes['category'] ) ? absint( $attributes['category'] ) : 0;
@@ -24,7 +22,6 @@ $show_tags        = isset( $attributes['showTags'] ) ? (bool) $attributes['showT
 $show_address     = isset( $attributes['showAddress'] ) ? (bool) $attributes['showAddress'] : true;
 $show_call_button = isset( $attributes['showCallButton'] ) ? (bool) $attributes['showCallButton'] : true;
 
-// Build the query similar to listings-card block.
 if ( $use_current_query && ! ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) {
 	global $wp_query;
 	$query = \CrocoDevs\Database\QueryBuilder::make( $wp_query->query_vars )
@@ -48,10 +45,8 @@ if ( ! $query->have_posts() ) {
 	return;
 }
 
-// Compute slider layout CSS variables (height handled by cards).
 $gap = 16;
 
-// Compute width expressions for each breakpoint.
 $items_desktop = max( 1, (int) $items_to_show_desktop );
 $items_tablet  = max( 1, (int) $items_to_show_tablet );
 $items_mobile  = max( 1, (int) $items_to_show_mobile );
@@ -73,7 +68,6 @@ if ( 'outside' === $button_position ) {
 	$wrapper_styles .= ' --cb-cat-slider-btn-offset: ' . $button_outside_offset . 'px;';
 }
 
-// Arrow style variables.
 $arrow_bg   = isset( $attributes['arrowBackgroundColor'] ) ? sanitize_hex_color( $attributes['arrowBackgroundColor'] ) : '';
 $arrow_icon = isset( $attributes['arrowIconColor'] ) ? sanitize_hex_color( $attributes['arrowIconColor'] ) : '';
 $radius     = isset( $attributes['arrowBorderRadius'] ) ? (int) $attributes['arrowBorderRadius'] : 50;
@@ -86,11 +80,10 @@ if ( $arrow_icon ) {
 	$wrapper_styles .= ' --cb-cat-slider-arrow-color: ' . $arrow_icon . ';';
 }
 
-// Border radius as percentage; clamp 0–50.
+// Clamp 0–50%.
 $radius = max( 0, min( 50, $radius ) );
 $wrapper_styles .= ' --cb-cat-slider-arrow-radius: ' . $radius . '%;';
 
-// Padding in px.
 $padding = max( 0, $padding );
 $wrapper_styles .= ' --cb-cat-slider-arrow-padding: ' . $padding . 'px;';
 
@@ -108,7 +101,6 @@ $wrapper = get_block_wrapper_attributes(
 	<div class="cb-categories-slider__track-wrap">
 		<div class="cb-categories-slider__track">
 			<?php
-			// Expose card display toggles to the listing-card partial via globals.
 			$GLOBALS['cb_listing_anything_card_settings'] = array(
 				'show_categories'  => $show_categories,
 				'show_open_status' => $show_open_status,

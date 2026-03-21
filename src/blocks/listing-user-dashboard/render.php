@@ -12,7 +12,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Handle login submissions when user is not logged in.
 $login_result   = ! is_user_logged_in() ? UserDashboardController::handle_login() : array( 'errors' => array(), 'username' => '' );
 $login_errors   = $login_result['errors'];
 $login_username = $login_result['username'];
@@ -23,7 +22,6 @@ $wrapper = get_block_wrapper_attributes(
 	)
 );
 
-// If user is not logged in, show login form.
 if ( ! is_user_logged_in() ) :
 	?>
 	<div <?php echo $wrapper; ?>>
@@ -85,7 +83,6 @@ if ( ! in_array( $tab, array( 'profile', 'add', 'listings' ), true ) ) {
 	$tab = 'profile';
 }
 
-// Base URL used for tab and action links.
 $base_url = remove_query_arg(
 	array(
 		'tab',
@@ -98,7 +95,6 @@ $base_url = remove_query_arg(
 // Meta fields mirror the admin meta box configuration.
 $meta_field_keys = ListingMeta::fields();
 
-// Detect edit context from query string.
 $editing_post_id = 0;
 if ( isset( $_GET['edit_listing'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	$maybe_id = absint( wp_unslash( $_GET['edit_listing'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -116,21 +112,17 @@ if ( $editing_post_id && 'listings' === $tab ) {
 	$tab = 'add';
 }
 
-// Handle delete action (may redirect and exit).
 UserDashboardController::handle_delete( $base_url );
 
-// Handle add/edit submission.
 $form_state = null;
 if ( 'add' === $tab ) {
 	$form_state = UserDashboardController::handle_submission( $can_submit, $editing_post_id, $meta_field_keys );
 }
 
-// Pre-populate form from existing listing on initial load.
 if ( ! $form_state && $editing_post_id && 'add' === $tab ) {
 	$form_state = UserDashboardController::prepopulate_form( $editing_post_id, $meta_field_keys );
 }
 
-// Unpack form state into local variables used by the template below.
 $errors           = array();
 $success_message  = '';
 $form_title       = '';
@@ -159,7 +151,6 @@ if ( $form_state ) {
 	$editing_post_id  = $form_state['editing_post_id'];
 }
 
-// Preload taxonomies for the add tab form.
 $categories = array();
 $tags       = array();
 

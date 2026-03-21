@@ -24,9 +24,8 @@ define( 'CB_LISTING_ANYTHING_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'CB_LISTING_ANYTHING_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'CB_LISTING_ANYTHING_PLUGIN_FILE', __FILE__ );
 
-// Load Composer autoloader (PSR-4 for both CBListingAnything and CrocoDevs).
 if ( file_exists( CB_LISTING_ANYTHING_PLUGIN_DIR . 'vendor/autoload.php' ) ) {
 	require_once CB_LISTING_ANYTHING_PLUGIN_DIR . 'vendor/autoload.php';
 }
-// Wire plugin-specific hooks and helpers via the core bootstrap file.
+
 require_once CB_LISTING_ANYTHING_PLUGIN_DIR . 'src/Core/Bootstrap.php';

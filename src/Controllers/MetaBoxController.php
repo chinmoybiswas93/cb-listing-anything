@@ -226,9 +226,6 @@ class MetaBoxController extends AbstractController {
 	public function render_listing_details_meta_box( $post ) {
 		wp_nonce_field( 'listing_details_meta_box', 'listing_details_meta_box_nonce' );
 
-		$enabled_fields = ListingMeta::normalize_enabled_fields(
-			SettingsController::get( 'enabled_fields', null )
-		);
 
 		$values = array();
 		foreach ( ListingMeta::fields() as $field ) {

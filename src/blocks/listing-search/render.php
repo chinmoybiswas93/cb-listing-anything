@@ -7,7 +7,6 @@ $placeholder = isset( $attributes['placeholder'] ) ? $attributes['placeholder'] 
 $button_text = isset( $attributes['buttonText'] ) ? $attributes['buttonText'] : __( 'Search', 'cb-listing-anything' );
 $archive_url = get_post_type_archive_link( crocodevs_config('post_type.slug') );
 
-// Optional button colors.
 $button_bg   = isset( $attributes['buttonBackgroundColor'] ) ? sanitize_hex_color( $attributes['buttonBackgroundColor'] ) : '';
 $button_text_color = isset( $attributes['buttonTextColor'] ) ? sanitize_hex_color( $attributes['buttonTextColor'] ) : '';
 

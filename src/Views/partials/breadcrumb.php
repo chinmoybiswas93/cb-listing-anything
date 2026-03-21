@@ -10,31 +10,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Check if we're on archive or category pages
 $is_archive = is_post_type_archive( crocodevs_config('post_type.slug') );
 $is_category = is_tax( crocodevs_config('taxonomies.category') );
 $is_tag = is_tax( crocodevs_config('taxonomies.tag') );
 
-// Get post_id from passed variable or current post (only for single pages)
 $breadcrumb_post_id = isset( $post_id ) ? absint( $post_id ) : ( is_singular( crocodevs_config('post_type.slug') ) ? get_the_ID() : 0 );
 
-// For archive/category pages, don't use post ID
 if ( $is_archive || $is_category || $is_tag ) {
 	$breadcrumb_post_id = 0;
 }
 
-// Get current term for category/tag archives
 $current_term = null;
 if ( $is_category || $is_tag ) {
 	$current_term = get_queried_object();
 }
 
-// Get styles from parent scope if set
 $breadcrumb_style = isset( $breadcrumb_style ) ? $breadcrumb_style : '';
 $link_style = isset( $link_style ) ? $link_style : '';
 $current_style = isset( $current_style ) ? $current_style : '';
 
-// Determine if we're in a cb_listing context
 $is_listing_context = $is_archive || $is_category || $is_tag || ( $breadcrumb_post_id && crocodevs_config('post_type.slug') === get_post_type( $breadcrumb_post_id ) );
 ?>
 <nav class="cb-listing-breadcrumb"<?php echo $breadcrumb_style; ?> aria-label="<?php esc_attr_e( 'Breadcrumb', 'cb-listing-anything' ); ?>">

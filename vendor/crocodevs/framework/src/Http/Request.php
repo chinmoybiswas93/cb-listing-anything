@@ -31,8 +31,6 @@ class Request {
 	}
 
 	/**
-	 * Get all parameters.
-	 *
 	 * @return array
 	 */
 	public function all() {
@@ -40,8 +38,6 @@ class Request {
 	}
 
 	/**
-	 * Get only the specified keys.
-	 *
 	 * @param string[] $keys
 	 *
 	 * @return array
@@ -51,8 +47,6 @@ class Request {
 	}
 
 	/**
-	 * Check if a parameter exists.
-	 *
 	 * @param string $key
 	 *
 	 * @return bool
@@ -62,8 +56,6 @@ class Request {
 	}
 
 	/**
-	 * Get the HTTP method.
-	 *
 	 * @return string
 	 */
 	public function method() {

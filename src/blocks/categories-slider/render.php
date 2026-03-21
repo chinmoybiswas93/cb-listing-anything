@@ -47,7 +47,6 @@ if ( $button_position === 'outside' ) {
 	$wrapper_styles .= ' --cb-cat-slider-btn-offset: ' . $button_outside_offset . 'px;';
 }
 
-// Arrow style variables.
 $arrow_bg   = isset( $attributes['arrowBackgroundColor'] ) ? sanitize_hex_color( $attributes['arrowBackgroundColor'] ) : '';
 $arrow_icon = isset( $attributes['arrowIconColor'] ) ? sanitize_hex_color( $attributes['arrowIconColor'] ) : '';
 $radius     = isset( $attributes['arrowBorderRadius'] ) ? (int) $attributes['arrowBorderRadius'] : 50;
@@ -60,11 +59,10 @@ if ( $arrow_icon ) {
 	$wrapper_styles .= ' --cb-cat-slider-arrow-color: ' . $arrow_icon . ';';
 }
 
-// Border radius as percentage; clamp 0–50.
+// Clamp 0–50%.
 $radius = max( 0, min( 50, $radius ) );
 $wrapper_styles .= ' --cb-cat-slider-arrow-radius: ' . $radius . '%;';
 
-// Padding in px.
 $padding = max( 0, $padding );
 $wrapper_styles .= ' --cb-cat-slider-arrow-padding: ' . $padding . 'px;';
 $wrapper = get_block_wrapper_attributes( array(

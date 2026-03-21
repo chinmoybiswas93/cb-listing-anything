@@ -80,10 +80,6 @@ class Validator {
 		return new ValidationResult( $errors, $validated );
 	}
 
-	// ------------------------------------------------------------------
-	// Rule implementations
-	// ------------------------------------------------------------------
-
 	protected static function validateString( $value ) {
 		return is_string( $value );
 	}
@@ -147,10 +143,6 @@ class Validator {
 
 		return in_array( (string) $value, $options, true );
 	}
-
-	// ------------------------------------------------------------------
-	// Helpers
-	// ------------------------------------------------------------------
 
 	protected static function isEmpty( $value ) {
 		return null === $value || '' === $value || ( is_array( $value ) && empty( $value ) );

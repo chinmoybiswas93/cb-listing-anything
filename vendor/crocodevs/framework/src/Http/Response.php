@@ -27,8 +27,6 @@ class Response {
 	}
 
 	/**
-	 * Return a success response.
-	 *
 	 * @param mixed $data
 	 *
 	 * @return \WP_REST_Response
@@ -38,8 +36,6 @@ class Response {
 	}
 
 	/**
-	 * Return a 201 created response.
-	 *
 	 * @param mixed $data
 	 *
 	 * @return \WP_REST_Response
@@ -49,8 +45,6 @@ class Response {
 	}
 
 	/**
-	 * Return a validation error response.
-	 *
 	 * @param array $errors
 	 *
 	 * @return \WP_REST_Response
@@ -60,8 +54,6 @@ class Response {
 	}
 
 	/**
-	 * Return a generic error response.
-	 *
 	 * @param string $message
 	 * @param int    $status
 	 *
@@ -72,8 +64,6 @@ class Response {
 	}
 
 	/**
-	 * Return a 404 not found response.
-	 *
 	 * @param string $message
 	 *
 	 * @return \WP_REST_Response

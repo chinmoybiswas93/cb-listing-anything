@@ -156,9 +156,9 @@ class SettingsController extends AbstractController {
 
 			$enabled = array_values( array_unique( $enabled ) );
 
-			// If admin submits Fields tab with nothing selected, fall back to all fields enabled.
-			if ( empty( $enabled ) ) {
-				$enabled = ListingMetaModel::fields();
+		// Empty selection falls back to all fields enabled.
+		if ( empty( $enabled ) ) {
+			$enabled = ListingMetaModel::fields();
 			}
 
 			$sanitized['enabled_fields'] = $enabled;

@@ -14,6 +14,5 @@ class ListingController extends AbstractRestController {
 	 * @return void
 	 */
 	public function register_routes() {
-		// Optional: register_rest_route( $this->rest_namespace(), '/listings', ... );
 	}
 }

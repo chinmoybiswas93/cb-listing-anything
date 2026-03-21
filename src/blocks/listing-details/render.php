@@ -194,10 +194,7 @@ $wrapper = get_block_wrapper_attributes(array(
 	<div class="cb-listing-single__layout">
 
 		<div class="cb-listing-single__left">
-			<?php
-			// Include the shared breadcrumb partial
-			include crocodevs_view_path( 'partials/breadcrumb' );
-			?>
+			<?php include crocodevs_view_path( 'partials/breadcrumb' ); ?>
 
 			<?php if ($show_gallery && ! empty($all_images)) : ?>
 				<div class="cb-listing-single__gallery">

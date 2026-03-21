@@ -15,8 +15,6 @@ class QueryBuilder {
 	protected $args = array();
 
 	/**
-	 * Create a new builder instance.
-	 *
 	 * @param array $base Optional base WP_Query args.
 	 *
 	 * @return static
@@ -165,8 +163,6 @@ class QueryBuilder {
 	}
 
 	/**
-	 * Filter by multiple author IDs.
-	 *
 	 * @param int[] $ids
 	 *
 	 * @return $this
@@ -178,8 +174,6 @@ class QueryBuilder {
 	}
 
 	/**
-	 * Exclude posts by specific author IDs.
-	 *
 	 * @param int[] $ids
 	 *
 	 * @return $this
@@ -191,8 +185,6 @@ class QueryBuilder {
 	}
 
 	/**
-	 * Filter by date range.
-	 *
 	 * @param array $date_query A WP_Date_Query-compatible array.
 	 *
 	 * @return $this
@@ -204,8 +196,6 @@ class QueryBuilder {
 	}
 
 	/**
-	 * Order by a meta value.
-	 *
 	 * @param string $meta_key
 	 * @param string $order
 	 * @param string $type     NUMERIC, DECIMAL, DATE, etc.
@@ -221,8 +211,6 @@ class QueryBuilder {
 	}
 
 	/**
-	 * Set ordering.
-	 *
 	 * @param string $orderby
 	 * @param string $order
 	 *
@@ -236,8 +224,6 @@ class QueryBuilder {
 	}
 
 	/**
-	 * Exclude specific post IDs.
-	 *
 	 * @param int|int[] $ids
 	 *
 	 * @return $this
@@ -249,8 +235,6 @@ class QueryBuilder {
 	}
 
 	/**
-	 * Include only specific post IDs.
-	 *
 	 * @param int|int[] $ids
 	 *
 	 * @return $this
@@ -262,8 +246,6 @@ class QueryBuilder {
 	}
 
 	/**
-	 * Filter by author ID.
-	 *
 	 * @param int $id
 	 *
 	 * @return $this
@@ -288,8 +270,6 @@ class QueryBuilder {
 	}
 
 	/**
-	 * Merge additional WP_Query args into the builder.
-	 *
 	 * @param array $args
 	 *
 	 * @return $this
@@ -314,8 +294,6 @@ class QueryBuilder {
 	}
 
 	/**
-	 * Get the raw WP_Query args.
-	 *
 	 * @return array
 	 */
 	public function toArgs() {

@@ -13,7 +13,8 @@ use CrocoDevs\Support\ServiceProviderManager;
  *
  * @package CrocoDevs
  */
-class Framework {
+class Framework
+{
 
 	const VERSION = '1.0.0';
 
@@ -45,26 +46,27 @@ class Framework {
 	 *
 	 * @return void
 	 */
-	public static function bootstrap( $pluginPath, array $providers = array() ) {
-		if ( self::$bootstrapped ) {
+	public static function bootstrap($pluginPath, array $providers = array())
+	{
+		if (self::$bootstrapped) {
 			return;
 		}
 
-		self::$appPath = rtrim( $pluginPath, '/\\' );
+		self::$appPath = rtrim($pluginPath, '/\\');
 
 		self::loadConfiguration();
 
-		if ( empty( $providers ) ) {
-			$providers = (array) self::config( 'app.providers', array() );
+		if (empty($providers)) {
+			$providers = (array) self::config('app.providers', array());
 		}
 
-		if ( ! empty( $providers ) ) {
-			ServiceProviderManager::register( $providers );
+		if (! empty($providers)) {
+			ServiceProviderManager::register($providers);
 			ServiceProviderManager::bootAll();
 		}
 
-		if ( self::config( 'app.use_router', false ) ) {
-			add_action( 'rest_api_init', array( self::class, 'registerRoutes' ) );
+		if (self::config('app.use_router', false)) {
+			add_action('rest_api_init', array(self::class, 'registerRoutes'));
 		}
 
 		self::$bootstrapped = true;
@@ -78,17 +80,18 @@ class Framework {
 	 *
 	 * @return mixed
 	 */
-	public static function config( $key, $default = null ) {
-		if ( '' === $key ) {
+	public static function config($key, $default = null)
+	{
+		if ('' === $key) {
 			return self::$config;
 		}
 
-		$segments = explode( '.', $key );
+		$segments = explode('.', $key);
 		$value    = self::$config;
 
-		foreach ( $segments as $segment ) {
-			if ( is_array( $value ) && array_key_exists( $segment, $value ) ) {
-				$value = $value[ $segment ];
+		foreach ($segments as $segment) {
+			if (is_array($value) && array_key_exists($segment, $value)) {
+				$value = $value[$segment];
 			} else {
 				return $default;
 			}
@@ -104,12 +107,13 @@ class Framework {
 	 *
 	 * @return string
 	 */
-	public static function appPath( $path = '' ) {
-		if ( '' === $path ) {
+	public static function appPath($path = '')
+	{
+		if ('' === $path) {
 			return self::$appPath;
 		}
 
-		return self::$appPath . '/' . ltrim( $path, '/\\' );
+		return self::$appPath . '/' . ltrim($path, '/\\');
 	}
 
 	/**
@@ -119,10 +123,11 @@ class Framework {
 	 *
 	 * @return string
 	 */
-	public static function viewPath( $view ) {
-		$view = str_replace( '.', '/', $view );
+	public static function viewPath($view)
+	{
+		$view = str_replace('.', '/', $view);
 
-		return self::appPath( 'src/Views/' . $view . '.php' );
+		return self::appPath('src/Views/' . $view . '.php');
 	}
 
 	/**
@@ -132,21 +137,24 @@ class Framework {
 	 *
 	 * @return string
 	 */
-	public static function assetUrl( $path ) {
-		return plugins_url( $path, self::$appPath . '/plugin.php' );
+	public static function assetUrl($path)
+	{
+		return plugins_url($path, self::$appPath . '/plugin.php');
 	}
 
 	/**
 	 * @return string
 	 */
-	public static function version() {
+	public static function version()
+	{
 		return self::VERSION;
 	}
 
 	/**
 	 * @return bool
 	 */
-	public static function isBootstrapped() {
+	public static function isBootstrapped()
+	{
 		return self::$bootstrapped;
 	}
 
@@ -155,10 +163,11 @@ class Framework {
 	 *
 	 * @return void
 	 */
-	public static function registerRoutes() {
-		$routesFile = self::appPath( 'routes/api.php' );
+	public static function registerRoutes()
+	{
+		$routesFile = self::appPath('routes/api.php');
 
-		if ( file_exists( $routesFile ) ) {
+		if (file_exists($routesFile)) {
 			Router::init();
 			require_once $routesFile;
 		}
@@ -171,7 +180,8 @@ class Framework {
 	 *
 	 * @return array
 	 */
-	protected static function getDefaultConfig() {
+	protected static function getDefaultConfig()
+	{
 		return array(
 			'app' => array(
 				'name'       => 'CrocoDevs App',
@@ -188,19 +198,20 @@ class Framework {
 	 *
 	 * @return void
 	 */
-	protected static function loadConfiguration() {
+	protected static function loadConfiguration()
+	{
 		$config = self::getDefaultConfig();
 
 		$appConfigPath = self::$appPath . '/config';
-		if ( is_dir( $appConfigPath ) ) {
-			foreach ( glob( $appConfigPath . '/*.php' ) as $file ) {
-				$name      = basename( $file, '.php' );
+		if (is_dir($appConfigPath)) {
+			foreach (glob($appConfigPath . '/*.php') as $file) {
+				$name      = basename($file, '.php');
 				$appConfig = require $file;
 
-				if ( isset( $config[ $name ] ) && is_array( $config[ $name ] ) && is_array( $appConfig ) ) {
-					$config[ $name ] = array_replace_recursive( $config[ $name ], $appConfig );
+				if (isset($config[$name]) && is_array($config[$name]) && is_array($appConfig)) {
+					$config[$name] = array_replace_recursive($config[$name], $appConfig);
 				} else {
-					$config[ $name ] = $appConfig;
+					$config[$name] = $appConfig;
 				}
 			}
 		}
