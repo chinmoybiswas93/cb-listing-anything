@@ -11,13 +11,88 @@ class CategoryImageController extends AbstractController {
 
 	const META_KEY = 'cb_listing_anything_category_image';
 
+	/**
+	 * Unix timestamp when the term was created (React admin table date column).
+	 */
+	const TERM_CREATED_META = 'cb_listing_term_created';
+
 	public function init() {
-		$tax = crocodevs_config( 'taxonomies.category' );
-		add_action( $tax . '_add_form_fields', array( $this, 'add_form_fields' ) );
-		add_action( $tax . '_edit_form_fields', array( $this, 'edit_form_fields' ) );
-		add_action( 'created_' . $tax, array( $this, 'save_term_image' ) );
-		add_action( 'edited_' . $tax, array( $this, 'save_term_image' ) );
+		$cat_tax = crocodevs_config( 'taxonomies.category' );
+		$tag_tax = crocodevs_config( 'taxonomies.tag' );
+
+		add_action( 'init', array( $this, 'register_term_meta_rest' ), 20 );
+
+		add_action( 'created_' . $cat_tax, array( $this, 'set_term_created_timestamp' ) );
+		add_action( 'created_' . $tag_tax, array( $this, 'set_term_created_timestamp' ) );
+
+		add_action( $cat_tax . '_add_form_fields', array( $this, 'add_form_fields' ) );
+		add_action( $cat_tax . '_edit_form_fields', array( $this, 'edit_form_fields' ) );
+		add_action( 'created_' . $cat_tax, array( $this, 'save_term_image' ) );
+		add_action( 'edited_' . $cat_tax, array( $this, 'save_term_image' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_media_script' ) );
+	}
+
+	/**
+	 * Expose term meta to the REST API for the React admin UI.
+	 *
+	 * @return void
+	 */
+	public function register_term_meta_rest() {
+		$cat_tax = crocodevs_config( 'taxonomies.category' );
+		$tag_tax = crocodevs_config( 'taxonomies.tag' );
+
+		register_term_meta(
+			$cat_tax,
+			self::META_KEY,
+			array(
+				'type'              => 'integer',
+				'single'            => true,
+				'sanitize_callback' => 'absint',
+				'show_in_rest'      => true,
+				'auth_callback'     => array( $this, 'term_meta_auth' ),
+			)
+		);
+
+		foreach ( array( $cat_tax, $tag_tax ) as $taxonomy ) {
+			register_term_meta(
+				$taxonomy,
+				self::TERM_CREATED_META,
+				array(
+					'type'              => 'integer',
+					'single'            => true,
+					'sanitize_callback' => 'absint',
+					'show_in_rest'      => true,
+					'auth_callback'     => array( $this, 'term_meta_auth' ),
+				)
+			);
+		}
+	}
+
+	/**
+	 * @param bool   $allowed Whether the user can add this meta.
+	 * @param string $meta_key Meta key.
+	 * @param int    $term_id Term ID.
+	 * @return bool
+	 */
+	public function term_meta_auth( $allowed, $meta_key, $term_id ) {
+		return current_user_can( 'edit_term', (int) $term_id );
+	}
+
+	/**
+	 * Store creation time for new terms (used in admin list date column).
+	 *
+	 * @param int $term_id Term ID.
+	 * @return void
+	 */
+	public function set_term_created_timestamp( $term_id ) {
+		$term_id = (int) $term_id;
+		if ( $term_id <= 0 ) {
+			return;
+		}
+		if ( (int) get_term_meta( $term_id, self::TERM_CREATED_META, true ) > 0 ) {
+			return;
+		}
+		update_term_meta( $term_id, self::TERM_CREATED_META, time() );
 	}
 
 	/**

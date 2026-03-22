@@ -1,9 +1,19 @@
-import { useState, useEffect, useCallback, useRef } from '@wordpress/element';
+import { useState, useEffect, useCallback, useRef, Fragment } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
-import { Notice, Spinner } from '@wordpress/components';
+import ListingThumb from '../components/ListingThumb';
+import { useToast } from '../context/ToastContext';
+import {
+	AdminListPageHeader,
+	AdminListToolbarRow,
+	AdminBulkBar,
+	AdminDataTable,
+} from '../components/admin-list';
 
 const PER_PAGE = 20;
+
+/** Shimmer rows shown while the first list request is in flight (no circle spinner). */
+const SKELETON_ROW_COUNT = 10;
 
 const STATUS_TABS = [
 	{ id: 'all', label: __( 'All', 'cb-listing-anything' ), param: null },
@@ -23,9 +33,8 @@ function stripTags( html ) {
 	return d.textContent || d.innerText || '';
 }
 
-/** Thumbnail URL from embedded featured media (REST _embed). */
-function featuredImageSrc( post ) {
-	const media = post._embedded?.[ 'wp:featuredmedia' ]?.[ 0 ];
+/** Thumbnail URL from a media REST object (batch /wp/v2/media). */
+function thumbUrlFromMediaObject( media ) {
 	if ( ! media ) {
 		return '';
 	}
@@ -39,20 +48,109 @@ function featuredImageSrc( post ) {
 	);
 }
 
+/**
+ * Admin term edit URL (fallback when REST omits `link`).
+ *
+ * @param {number} termId
+ * @returns {string}
+ */
+function categoryTermEditUrl( termId ) {
+	const { adminUrl, categoryTaxonomy, postType } = window.cbListingAdmin;
+	const base = String( adminUrl || '' ).replace( /\/?$/, '/' );
+	let u;
+	try {
+		u = new URL( 'term.php', base );
+	} catch {
+		u = new URL( 'term.php', window.location.origin + base );
+	}
+	u.searchParams.set( 'taxonomy', categoryTaxonomy );
+	u.searchParams.set( 'tag_ID', String( termId ) );
+	if ( postType ) {
+		u.searchParams.set( 'post_type', postType );
+	}
+	return u.toString();
+}
+
+/**
+ * Public term archive URL from REST `term.link` (see WP_REST_Terms_Controller).
+ *
+ * @param {{ id?: number, link?: string }} term
+ * @returns {string}
+ */
+function categoryTermArchiveUrl( term ) {
+	if ( term && typeof term.link === 'string' && term.link.trim() !== '' ) {
+		return term.link;
+	}
+	if ( term?.id ) {
+		return categoryTermEditUrl( term.id );
+	}
+	return '#';
+}
+
+/**
+ * Listing categories from REST `_embedded['wp:term']`, or from `termsById` + post taxonomy IDs.
+ *
+ * @param {Object} post
+ * @param {string} categoryTaxonomy
+ * @param {Record<number, { id: number, name: string, taxonomy: string, link?: string }>} [termsById]
+ * @param {string} [categoryRestBase] REST base for category taxonomy (fallback field name on post).
+ * @returns {Array<{ id: number, name: string, taxonomy: string, link?: string }>}
+ */
+function getListingCategories( post, categoryTaxonomy, termsById, categoryRestBase ) {
+	const embedded = post._embedded?.[ 'wp:term' ];
+	if ( Array.isArray( embedded ) ) {
+		const flat = embedded.flat().filter( Boolean );
+		const fromEmbed = flat
+			.filter( ( t ) => t.taxonomy === categoryTaxonomy )
+			.sort( ( a, b ) =>
+				( a.name || '' ).localeCompare( b.name || '', undefined, { sensitivity: 'base' } )
+			);
+		if ( fromEmbed.length ) {
+			return fromEmbed;
+		}
+	}
+
+	let raw = post[ categoryTaxonomy ];
+	if ( raw == null && categoryRestBase && post[ categoryRestBase ] != null ) {
+		raw = post[ categoryRestBase ];
+	}
+	const ids = Array.isArray( raw )
+		? raw.map( ( id ) => Number( id ) ).filter( ( id ) => id > 0 )
+		: [];
+	if ( ! ids.length || ! termsById || typeof termsById !== 'object' ) {
+		return [];
+	}
+	return ids
+		.map( ( id ) => termsById[ id ] )
+		.filter( Boolean )
+		.sort( ( a, b ) =>
+			( a.name || '' ).localeCompare( b.name || '', undefined, { sensitivity: 'base' } )
+		);
+}
+
 export default function ListingsScreen() {
-	const { restBase, adminUrl } = window.cbListingAdmin;
+	const { restBase, adminUrl, categoryTaxonomy, categoryRestBase, allItemsLabel } =
+		window.cbListingAdmin;
+	const listPageHeading =
+		typeof allItemsLabel === 'string' && allItemsLabel.trim() !== ''
+			? allItemsLabel
+			: __( 'All Listings', 'cb-listing-anything' );
+	const { showToast } = useToast();
 	const [ statusFilter, setStatusFilter ] = useState( 'all' );
 	const [ searchInput, setSearchInput ] = useState( '' );
 	const [ activeSearch, setActiveSearch ] = useState( '' );
 	const [ page, setPage ] = useState( 1 );
 	const [ loading, setLoading ] = useState( true );
-	const [ error, setError ] = useState( null );
 	const [ rows, setRows ] = useState( [] );
 	const [ totalPages, setTotalPages ] = useState( 1 );
 	const [ totalItems, setTotalItems ] = useState( 0 );
 	const [ selectedIds, setSelectedIds ] = useState( () => new Set() );
 	const [ bulkBusy, setBulkBusy ] = useState( false );
 	const [ bulkAction, setBulkAction ] = useState( '' );
+	const [ featuredThumbUrls, setFeaturedThumbUrls ] = useState( null );
+	const [ userNamesById, setUserNamesById ] = useState( {} );
+	/** Term id → term object when `_embed` omits `wp:term` but post has taxonomy IDs. */
+	const [ categoryTermsById, setCategoryTermsById ] = useState( {} );
 	const selectAllRef = useRef( null );
 
 	const pathForFetch = useCallback( () => {
@@ -62,7 +160,6 @@ export default function ListingsScreen() {
 		params.set( 'page', String( page ) );
 		params.set( 'orderby', 'date' );
 		params.set( 'order', 'desc' );
-		params.set( '_embed', '1' );
 		if ( activeSearch.trim() ) {
 			params.set( 'search', activeSearch.trim() );
 		}
@@ -72,12 +169,12 @@ export default function ListingsScreen() {
 		} else {
 			params.set( 'status', 'any' );
 		}
+		params.set( '_embed', '1' );
 		return `wp/v2/${ restBase }?${ params.toString() }`;
 	}, [ restBase, page, activeSearch, statusFilter ] );
 
 	const load = useCallback( async () => {
 		setLoading( true );
-		setError( null );
 		try {
 			const response = await apiFetch( {
 				path: pathForFetch(),
@@ -94,16 +191,173 @@ export default function ListingsScreen() {
 			setTotalItems( total ? parseInt( total, 10 ) : 0 );
 			setTotalPages( pages ? parseInt( pages, 10 ) : 1 );
 		} catch ( e ) {
-			setError( e.message || __( 'Could not load listings.', 'cb-listing-anything' ) );
+			showToast(
+				e.message || __( 'Could not load listings.', 'cb-listing-anything' ),
+				'error'
+			);
 			setRows( [] );
 		} finally {
 			setLoading( false );
 		}
-	}, [ pathForFetch ] );
+	}, [ pathForFetch, showToast ] );
 
 	useEffect( () => {
 		load();
 	}, [ load ] );
+
+	/** Load category term objects when REST embed omits `wp:term` but post lists term IDs. */
+	useEffect( () => {
+		if ( ! rows.length || ! categoryRestBase || ! categoryTaxonomy ) {
+			setCategoryTermsById( {} );
+			return;
+		}
+
+		const needIds = new Set();
+		for ( const post of rows ) {
+			const embedded = post._embedded?.[ 'wp:term' ];
+			let hasEmbed = false;
+			if ( Array.isArray( embedded ) ) {
+				const flat = embedded.flat().filter( Boolean );
+				hasEmbed = flat.some( ( t ) => t.taxonomy === categoryTaxonomy );
+			}
+			if ( hasEmbed ) {
+				continue;
+			}
+			let raw = post[ categoryTaxonomy ];
+			if ( raw == null && categoryRestBase && post[ categoryRestBase ] != null ) {
+				raw = post[ categoryRestBase ];
+			}
+			if ( Array.isArray( raw ) ) {
+				raw.forEach( ( id ) => {
+					const n = Number( id );
+					if ( n > 0 ) {
+						needIds.add( n );
+					}
+				} );
+			}
+		}
+
+		if ( needIds.size === 0 ) {
+			setCategoryTermsById( {} );
+			return;
+		}
+
+		let cancelled = false;
+		const include = [ ...needIds ].join( ',' );
+
+		apiFetch( {
+			path: `wp/v2/${ categoryRestBase }?include=${ include }&per_page=100&context=edit`,
+		} )
+			.then( ( terms ) => {
+				if ( cancelled ) {
+					return;
+				}
+				const map = {};
+				for ( const t of Array.isArray( terms ) ? terms : [] ) {
+					map[ t.id ] = t;
+				}
+				setCategoryTermsById( map );
+			} )
+			.catch( () => {
+				if ( ! cancelled ) {
+					setCategoryTermsById( {} );
+				}
+			} );
+
+		return () => {
+			cancelled = true;
+		};
+	}, [ rows, categoryRestBase, categoryTaxonomy ] );
+
+	/** Batch featured image URLs + author names (no _embed on list — smaller JSON). */
+	useEffect( () => {
+		if ( ! rows.length ) {
+			setFeaturedThumbUrls( {} );
+			setUserNamesById( {} );
+			return;
+		}
+
+		const mediaIds = [
+			...new Set(
+				rows.map( ( p ) => p.featured_media ).filter( ( id ) => id > 0 )
+			),
+		];
+		const authorIds = [
+			...new Set( rows.map( ( p ) => p.author ).filter( ( id ) => id > 0 ) ),
+		];
+
+		if ( mediaIds.length ) {
+			setFeaturedThumbUrls( null );
+		} else {
+			setFeaturedThumbUrls( {} );
+		}
+
+		let cancelled = false;
+
+		const run = async () => {
+			const promises = [];
+
+			if ( mediaIds.length ) {
+				promises.push(
+					apiFetch( {
+						path: `wp/v2/media?include=${ mediaIds.join(
+							','
+						) }&per_page=100&_fields=id,source_url,media_details`,
+					} )
+						.then( ( items ) => {
+							if ( cancelled ) {
+								return;
+							}
+							const map = {};
+							for ( const m of Array.isArray( items ) ? items : [] ) {
+								map[ m.id ] = thumbUrlFromMediaObject( m );
+							}
+							setFeaturedThumbUrls( map );
+						} )
+						.catch( () => {
+							if ( ! cancelled ) {
+								setFeaturedThumbUrls( {} );
+							}
+						} )
+				);
+			}
+
+			if ( authorIds.length ) {
+				promises.push(
+					apiFetch( {
+						path: `wp/v2/users?include=${ authorIds.join(
+							','
+						) }&per_page=100&_fields=id,name`,
+					} )
+						.then( ( users ) => {
+							if ( cancelled ) {
+								return;
+							}
+							const map = {};
+							for ( const u of Array.isArray( users ) ? users : [] ) {
+								map[ u.id ] = u.name;
+							}
+							setUserNamesById( map );
+						} )
+						.catch( () => {
+							if ( ! cancelled ) {
+								setUserNamesById( {} );
+							}
+						} )
+				);
+			} else {
+				setUserNamesById( {} );
+			}
+
+			await Promise.allSettled( promises );
+		};
+
+		run();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [ rows ] );
 
 	useEffect( () => {
 		setSelectedIds( new Set() );
@@ -172,7 +426,6 @@ export default function ListingsScreen() {
 		}
 
 		setBulkBusy( true );
-		setError( null );
 		try {
 			if ( bulkAction === 'trash' ) {
 				await Promise.all(
@@ -199,7 +452,10 @@ export default function ListingsScreen() {
 			setBulkAction( '' );
 			await load();
 		} catch ( e ) {
-			setError( e.message || __( 'Bulk action failed.', 'cb-listing-anything' ) );
+			showToast(
+				e.message || __( 'Bulk action failed.', 'cb-listing-anything' ),
+				'error'
+			);
 		} finally {
 			setBulkBusy( false );
 		}
@@ -222,7 +478,10 @@ export default function ListingsScreen() {
 			} );
 			load();
 		} catch ( e ) {
-			setError( e.message || __( 'Could not trash listing.', 'cb-listing-anything' ) );
+			showToast(
+				e.message || __( 'Could not trash listing.', 'cb-listing-anything' ),
+				'error'
+			);
 		}
 	};
 
@@ -235,7 +494,10 @@ export default function ListingsScreen() {
 			} );
 			load();
 		} catch ( e ) {
-			setError( e.message || __( 'Could not restore listing.', 'cb-listing-anything' ) );
+			showToast(
+				e.message || __( 'Could not restore listing.', 'cb-listing-anything' ),
+				'error'
+			);
 		}
 	};
 
@@ -250,7 +512,10 @@ export default function ListingsScreen() {
 			} );
 			load();
 		} catch ( e ) {
-			setError( e.message || __( 'Could not delete listing.', 'cb-listing-anything' ) );
+			showToast(
+				e.message || __( 'Could not delete listing.', 'cb-listing-anything' ),
+				'error'
+			);
 		}
 	};
 
@@ -260,11 +525,26 @@ export default function ListingsScreen() {
 	};
 
 	const authorName = ( post ) => {
-		const emb = post._embedded && post._embedded.author && post._embedded.author[ 0 ];
-		if ( emb && emb.name ) {
-			return emb.name;
+		const id = post.author;
+		if ( id === 0 || id === '0' || id == null || id === '' ) {
+			return __( 'None', 'cb-listing-anything' );
 		}
-		return `#${ post.author }`;
+		const name = userNamesById[ id ];
+		if ( name ) {
+			return name;
+		}
+		return `#${ id }`;
+	};
+
+	const thumbSrcForRow = ( post ) => {
+		const fid = post.featured_media;
+		if ( ! fid ) {
+			return '';
+		}
+		if ( featuredThumbUrls === null ) {
+			return null;
+		}
+		return featuredThumbUrls[ fid ] ?? '';
 	};
 
 	const fmtDate = ( iso ) => {
@@ -278,116 +558,87 @@ export default function ListingsScreen() {
 		}
 	};
 
+	const bulkActions = [
+		{ value: '', label: __( 'Bulk actions', 'cb-listing-anything' ) },
+		{
+			value: 'trash',
+			label:
+				statusFilter === 'trash'
+					? __( 'Delete permanently', 'cb-listing-anything' )
+					: __( 'Trash', 'cb-listing-anything' ),
+		},
+		{ value: 'publish', label: __( 'Publish', 'cb-listing-anything' ) },
+		{ value: 'draft', label: __( 'Draft', 'cb-listing-anything' ) },
+	];
+
 	return (
 		<div className="cb-admin-list">
 			<div className="cb-admin-list__toolbar">
-				<div className="cb-admin-list__toolbar-head">
-					<h1 className="cb-admin-list__title">{ __( 'Listing list', 'cb-listing-anything' ) }</h1>
-					<p className="cb-admin-list__count">
-						{ sprintf(
-							/* translators: %d: number of listings */
-							__( '%d items', 'cb-listing-anything' ),
-							totalItems
-						) }
-					</p>
-				</div>
-				<div className="cb-admin-list__toolbar-row">
-					<div className="cb-admin-list__toolbar-row-start">
-						<div className="cb-admin-list__tabs" role="tablist">
-							{ STATUS_TABS.map( ( t ) => (
-								<button
-									key={ t.id }
-									type="button"
-									className={ `cb-admin-list__tab${ statusFilter === t.id ? ' is-active' : '' }` }
-									onClick={ () => {
-										setStatusFilter( t.id );
-										setPage( 1 );
-									} }
-								>
-									{ t.label }
-								</button>
-							) ) }
-						</div>
-						<div className="cb-admin-list__bulk-actions">
-							<label htmlFor="cb-listing-bulk-action" className="screen-reader-text">
-								{ __( 'Bulk actions', 'cb-listing-anything' ) }
-							</label>
-							<select
-								id="cb-listing-bulk-action"
-								className="cb-admin-list__bulk-select"
-								value={ bulkAction }
-								disabled={ bulkBusy || selectedIds.size === 0 }
-								onChange={ ( e ) => setBulkAction( e.target.value ) }
-							>
-								<option value="">
-									{ __( 'Bulk actions', 'cb-listing-anything' ) }
-								</option>
-								<option value="trash">
-									{ statusFilter === 'trash'
-										? __( 'Delete permanently', 'cb-listing-anything' )
-										: __( 'Trash', 'cb-listing-anything' ) }
-								</option>
-								<option value="publish">{ __( 'Publish', 'cb-listing-anything' ) }</option>
-								<option value="draft">{ __( 'Draft', 'cb-listing-anything' ) }</option>
-							</select>
-							<button
-								type="button"
-								className="cb-admin-app__btn cb-admin-app__btn--ghost"
-								disabled={
-									bulkBusy || selectedIds.size === 0 || ! bulkAction
+				<AdminListPageHeader
+					title={ listPageHeading }
+					itemCount={ totalItems }
+				/>
+				<AdminListToolbarRow
+					start={
+						<>
+							<div className="cb-admin-list__tabs" role="tablist">
+								{ STATUS_TABS.map( ( t ) => (
+									<button
+										key={ t.id }
+										type="button"
+										className={ `cb-admin-list__tab${ statusFilter === t.id ? ' is-active' : '' }` }
+										onClick={ () => {
+											setStatusFilter( t.id );
+											setPage( 1 );
+										} }
+									>
+										{ t.label }
+									</button>
+								) ) }
+							</div>
+							<AdminBulkBar
+								selectId="cb-listing-bulk-action"
+								bulkAction={ bulkAction }
+								onBulkActionChange={ setBulkAction }
+								onApply={ bulkApply }
+								bulkBusy={ bulkBusy }
+								selectedCount={ selectedIds.size }
+								disableSelect={ selectedIds.size === 0 }
+								disableApply={
+									selectedIds.size === 0 || ! bulkAction
 								}
-								onClick={ bulkApply }
-							>
-								{ __( 'Apply', 'cb-listing-anything' ) }
+								actions={ bulkActions }
+							/>
+						</>
+					}
+					end={
+						<form className="cb-admin-list__search" onSubmit={ onSearchSubmit }>
+							<input
+								type="search"
+								className="cb-admin-list__search-input"
+								placeholder={ __( 'Search…', 'cb-listing-anything' ) }
+								value={ searchInput }
+								onChange={ ( e ) => setSearchInput( e.target.value ) }
+							/>
+							<button type="submit" className="cb-admin-app__btn cb-admin-app__btn--ghost">
+								{ __( 'Search', 'cb-listing-anything' ) }
 							</button>
-							{ selectedIds.size > 0 && (
-								<span className="cb-admin-list__toolbar-selected" aria-live="polite">
-									{ sprintf(
-										/* translators: %d: number of selected rows */
-										__( '%d selected', 'cb-listing-anything' ),
-										selectedIds.size
-									) }
-								</span>
-							) }
-						</div>
-					</div>
-					<form className="cb-admin-list__search" onSubmit={ onSearchSubmit }>
-						<input
-							type="search"
-							className="cb-admin-list__search-input"
-							placeholder={ __( 'Search…', 'cb-listing-anything' ) }
-							value={ searchInput }
-							onChange={ ( e ) => setSearchInput( e.target.value ) }
-						/>
-						<button type="submit" className="cb-admin-app__btn cb-admin-app__btn--ghost">
-							{ __( 'Search', 'cb-listing-anything' ) }
-						</button>
-					</form>
-				</div>
+						</form>
+					}
+				/>
 			</div>
 
-			{ error && (
-				<Notice status="error" isDismissible onRemove={ () => setError( null ) }>
-					{ error }
-				</Notice>
-			) }
-
-			<div className="cb-admin-table-wrap">
-				{ loading ? (
-					<div className="cb-admin-list__spinner">
-						<Spinner />
-					</div>
-				) : (
-					<table className="cb-admin-table">
+			<AdminDataTable ariaBusy={ loading }>
 						<colgroup>
 							<col style={ { width: '4%' } } />
 							<col style={ { width: '3%' } } />
 							<col style={ { width: '8%' } } />
-							<col style={ { width: '28%' } } />
-							<col style={ { width: '11%' } } />
-							<col style={ { width: '12%' } } />
+							<col style={ { width: '22%' } } />
+							<col style={ { width: '9%' } } />
 							<col style={ { width: '14%' } } />
-							<col style={ { width: '20%' } } />
+							<col style={ { width: '10%' } } />
+							<col style={ { width: '11%' } } />
+							<col style={ { width: '19%' } } />
 						</colgroup>
 						<thead>
 							<tr>
@@ -421,6 +672,9 @@ export default function ListingsScreen() {
 								<th className="cb-admin-table__col-status" scope="col">
 									{ __( 'Status', 'cb-listing-anything' ) }
 								</th>
+								<th className="cb-admin-table__col-categories" scope="col">
+									{ __( 'Categories', 'cb-listing-anything' ) }
+								</th>
 								<th className="cb-admin-table__col-author" scope="col">
 									{ __( 'Author', 'cb-listing-anything' ) }
 								</th>
@@ -433,15 +687,66 @@ export default function ListingsScreen() {
 							</tr>
 						</thead>
 						<tbody>
-							{ rows.length === 0 && (
+							{ loading && rows.length === 0 &&
+								Array.from( { length: SKELETON_ROW_COUNT } ).map(
+									( _, i ) => (
+										<tr
+											key={ `cb-list-skeleton-${ i }` }
+											className="cb-admin-table__row--skeleton"
+											aria-hidden="true"
+										>
+											<td className="cb-admin-table__col-check">
+												<span className="cb-admin-table__skeleton-box cb-admin-table__skeleton-box--check" />
+											</td>
+											<td className="cb-admin-table__col-num">
+												<span className="cb-admin-table__skeleton-line cb-admin-table__skeleton-line--num" />
+											</td>
+											<td className="cb-admin-table__col-thumb">
+												<span className="cb-admin-table__thumb-skeleton" />
+											</td>
+											<td className="cb-admin-table__col-title">
+												<span className="cb-admin-table__skeleton-line cb-admin-table__skeleton-line--title" />
+											</td>
+											<td className="cb-admin-table__col-status">
+												<span className="cb-admin-table__skeleton-line cb-admin-table__skeleton-line--badge" />
+											</td>
+											<td className="cb-admin-table__col-categories">
+												<span className="cb-admin-table__skeleton-line" />
+											</td>
+											<td className="cb-admin-table__col-author">
+												<span className="cb-admin-table__skeleton-line cb-admin-table__skeleton-line--author" />
+											</td>
+											<td className="cb-admin-table__col-date">
+												<span className="cb-admin-table__skeleton-line cb-admin-table__skeleton-line--date" />
+											</td>
+											<td className="cb-admin-table__actions">
+												<span className="cb-admin-table__skeleton-line cb-admin-table__skeleton-line--actions" />
+											</td>
+										</tr>
+									)
+								) }
+							{ ! loading && rows.length === 0 && (
 								<tr>
-									<td colSpan={ 8 } className="cb-admin-table__empty">
+									<td colSpan={ 9 } className="cb-admin-table__empty">
 										{ __( 'No listings found.', 'cb-listing-anything' ) }
 									</td>
 								</tr>
 							) }
 							{ rows.map( ( post, index ) => {
-								const thumbSrc = featuredImageSrc( post );
+								const categories = getListingCategories(
+									post,
+									categoryTaxonomy,
+									categoryTermsById,
+									categoryRestBase
+								);
+								const thumbSrc = thumbSrcForRow( post );
+								const thumbAlt = post.title?.rendered
+									? sprintf(
+											/* translators: %s: listing title */
+											__( 'Featured image for %s', 'cb-listing-anything' ),
+											stripTags( post.title.rendered )
+									  )
+									: __( 'Featured image', 'cb-listing-anything' );
 								return (
 								<tr key={ post.id }>
 									<td className="cb-admin-table__col-check">
@@ -462,30 +767,11 @@ export default function ListingsScreen() {
 										{ ( page - 1 ) * PER_PAGE + index + 1 }
 									</td>
 									<td className="cb-admin-table__col-thumb">
-										{ thumbSrc ? (
-											<img
-												className="cb-admin-table__thumb-img"
-												src={ thumbSrc }
-												alt={
-													post.title?.rendered
-														? sprintf(
-																/* translators: %s: listing title */
-																__( 'Featured image for %s', 'cb-listing-anything' ),
-																stripTags( post.title.rendered )
-														  )
-														: __( 'Featured image', 'cb-listing-anything' )
-												}
-												loading="lazy"
-												decoding="async"
-												width="48"
-												height="48"
-											/>
-										) : (
-											<span
-												className="cb-admin-table__thumb-placeholder"
-												aria-hidden="true"
-											/>
-										) }
+										<ListingThumb
+											src={ thumbSrc }
+											alt={ thumbAlt }
+											fetchPriority="low"
+										/>
 									</td>
 									<td className="cb-admin-table__col-title">
 										<strong>
@@ -496,6 +782,31 @@ export default function ListingsScreen() {
 									</td>
 									<td className="cb-admin-table__col-status">
 										<span className={ `cb-admin-badge cb-admin-badge--${ post.status }` }>{ post.status }</span>
+									</td>
+									<td className="cb-admin-table__col-categories">
+										{ categories.length === 0 ? (
+											<span className="cb-admin-table__categories-empty">—</span>
+										) : (
+											<span className="cb-admin-table__categories-list">
+												{ categories.map( ( term, ci ) => (
+													<Fragment key={ term.id }>
+														{ ci > 0 ? (
+															<span className="cb-admin-table__categories-sep" aria-hidden="true">
+																{ ', ' }
+															</span>
+														) : null }
+														<a
+															className="cb-admin-table__category-link"
+															href={ categoryTermArchiveUrl( term ) }
+															target="_blank"
+															rel="noopener noreferrer"
+														>
+															{ stripTags( term.name ) }
+														</a>
+													</Fragment>
+												) ) }
+											</span>
+										) }
 									</td>
 									<td className="cb-admin-table__col-author">{ authorName( post ) }</td>
 									<td className="cb-admin-table__col-date">{ fmtDate( post.date ) }</td>
@@ -529,9 +840,7 @@ export default function ListingsScreen() {
 								);
 							} ) }
 						</tbody>
-					</table>
-				) }
-			</div>
+			</AdminDataTable>
 
 			{ totalPages > 1 && (
 				<div className="cb-admin-pagination">

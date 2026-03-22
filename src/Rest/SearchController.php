@@ -88,12 +88,12 @@ class SearchController extends AbstractRestController {
 
 				$results[] = array(
 					'id'        => $post_id,
-					'title'     => html_entity_decode( get_the_title(), ENT_QUOTES | ENT_HTML5, 'UTF-8' ),
+					'title'     => RestHtmlEntityDecode::decode_string( get_the_title() ),
 					'url'       => get_permalink(),
 					'thumbnail' => $thumb_url ? $thumb_url : '',
-					'location'  => $location ? html_entity_decode( $location, ENT_QUOTES | ENT_HTML5, 'UTF-8' ) : '',
+					'location'  => $location ? RestHtmlEntityDecode::decode_string( $location ) : '',
 					'price'     => $price ? SettingsController::currency_symbol() . $price : '',
-					'category'  => $cat_name ? html_entity_decode( $cat_name, ENT_QUOTES | ENT_HTML5, 'UTF-8' ) : '',
+					'category'  => $cat_name ? RestHtmlEntityDecode::decode_string( $cat_name ) : '',
 				);
 			}
 			wp_reset_postdata();

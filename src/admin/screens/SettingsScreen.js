@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from '@wordpress/element';
+import { useState, useEffect, useCallback } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { Button, Spinner } from '@wordpress/components';
 import SettingRow from '../components/SettingRow';
-import AdminToastStack from '../components/AdminToastStack';
 import { SettingsSidebarToggleIcon, SettingsNavIcon } from '../components/SettingsSidebarIcons';
+import { useToast } from '../context/ToastContext';
 
 const SIDEBAR_COLLAPSED_KEY = 'cb_listing_admin_settings_sidebar_collapsed';
 
@@ -15,16 +15,14 @@ const SIDEBAR = [
 	{ id: 'advanced', label: __( 'Advanced', 'cb-listing-anything' ) },
 ];
 
-const TOAST_MS = 5000;
-
 export default function SettingsScreen( { initialTab } ) {
 	const { namespace, settingsPageUrl } = window.cbListingAdmin;
+	const { showToast } = useToast();
 	const [ tab, setTab ] = useState( initialTab || 'general' );
 	const [ loading, setLoading ] = useState( true );
 	const [ saving, setSaving ] = useState( false );
 	const [ loadError, setLoadError ] = useState( null );
 	const [ payload, setPayload ] = useState( null );
-	const [ toasts, setToasts ] = useState( [] );
 	const [ sidebarCollapsed, setSidebarCollapsed ] = useState( () => {
 		try {
 			return window.localStorage.getItem( SIDEBAR_COLLAPSED_KEY ) === '1';
@@ -32,37 +30,6 @@ export default function SettingsScreen( { initialTab } ) {
 			return false;
 		}
 	} );
-
-	const toastIdRef = useRef( 0 );
-	const toastTimeoutsRef = useRef( new Map() );
-
-	const removeToast = useCallback( ( id ) => {
-		const t = toastTimeoutsRef.current.get( id );
-		if ( t ) {
-			window.clearTimeout( t );
-			toastTimeoutsRef.current.delete( id );
-		}
-		setToasts( ( prev ) => prev.filter( ( x ) => x.id !== id ) );
-	}, [] );
-
-	const addToast = useCallback(
-		( message, status = 'success' ) => {
-			const id = ++toastIdRef.current;
-			setToasts( ( prev ) => [ ...prev, { id, message, status } ] );
-			const timer = window.setTimeout( () => {
-				removeToast( id );
-			}, TOAST_MS );
-			toastTimeoutsRef.current.set( id, timer );
-		},
-		[ removeToast ]
-	);
-
-	useEffect( () => {
-		return () => {
-			toastTimeoutsRef.current.forEach( ( t ) => window.clearTimeout( t ) );
-			toastTimeoutsRef.current.clear();
-		};
-	}, [] );
 
 	useEffect( () => {
 		try {
@@ -123,9 +90,9 @@ export default function SettingsScreen( { initialTab } ) {
 				data: body,
 			} );
 			setPayload( data );
-			addToast( __( 'Settings saved.', 'cb-listing-anything' ), 'success' );
+			showToast( __( 'Settings saved.', 'cb-listing-anything' ), 'success' );
 		} catch ( e ) {
-			addToast( e.message || __( 'Save failed.', 'cb-listing-anything' ), 'error' );
+			showToast( e.message || __( 'Save failed.', 'cb-listing-anything' ), 'error' );
 		} finally {
 			setSaving( false );
 		}
@@ -140,9 +107,9 @@ export default function SettingsScreen( { initialTab } ) {
 				data: { enabled_fields: settings.enabled_fields },
 			} );
 			setPayload( data );
-			addToast( __( 'Settings saved.', 'cb-listing-anything' ), 'success' );
+			showToast( __( 'Settings saved.', 'cb-listing-anything' ), 'success' );
 		} catch ( e ) {
-			addToast( e.message || __( 'Save failed.', 'cb-listing-anything' ), 'error' );
+			showToast( e.message || __( 'Save failed.', 'cb-listing-anything' ), 'error' );
 		} finally {
 			setSaving( false );
 		}
@@ -443,7 +410,6 @@ export default function SettingsScreen( { initialTab } ) {
 					</main>
 				</div>
 			</div>
-			<AdminToastStack toasts={ toasts } onDismiss={ removeToast } />
 		</>
 	);
 }

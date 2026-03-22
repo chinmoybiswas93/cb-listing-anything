@@ -45,13 +45,6 @@ document.addEventListener( 'DOMContentLoaded', function () {
 				} );
 		}
 
-		function decodeHtmlEntities( text ) {
-			if ( ! text ) return '';
-			var div = document.createElement( 'div' );
-			div.innerHTML = text;
-			return div.textContent || div.innerText || '';
-		}
-
 		function renderResults( data ) {
 			if ( ! data || data.length === 0 ) {
 				results.innerHTML = '<div class="cb-listing-search__empty">No listings found.</div>';
@@ -61,11 +54,11 @@ document.addEventListener( 'DOMContentLoaded', function () {
 
 			var html = '';
 			data.forEach( function ( item ) {
-				var title = escapeHtml( decodeHtmlEntities( item.title ) );
+				var title = escapeHtml( item.title );
 				var metaParts = [];
-				if ( item.category ) metaParts.push( decodeHtmlEntities( item.category ) );
-				if ( item.location ) metaParts.push( decodeHtmlEntities( item.location ) );
-				if ( item.price ) metaParts.push( decodeHtmlEntities( item.price ) );
+				if ( item.category ) metaParts.push( item.category );
+				if ( item.location ) metaParts.push( item.location );
+				if ( item.price ) metaParts.push( item.price );
 				var meta = metaParts.length ? escapeHtml( metaParts.join( ' · ' ) ) : '';
 
 				html += '<a href="' + escapeAttr( item.url ) + '" class="cb-listing-search__result-item">';

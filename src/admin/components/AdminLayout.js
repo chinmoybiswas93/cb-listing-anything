@@ -4,6 +4,8 @@ export default function AdminLayout( { activeScreen, children } ) {
 	const {
 		pluginName,
 		listPageUrl,
+		categoriesPageUrl,
+		tagsPageUrl,
 		settingsPageUrl,
 		newPostUrl,
 	} = window.cbListingAdmin;
@@ -24,6 +26,18 @@ export default function AdminLayout( { activeScreen, children } ) {
 							href={ listPageUrl }
 						>
 							{ __( 'Listings', 'cb-listing-anything' ) }
+						</a>
+						<a
+							className={ `cb-admin-app__nav-link${ activeScreen === 'categories' ? ' is-active' : '' }` }
+							href={ categoriesPageUrl || '#' }
+						>
+							{ __( 'Categories', 'cb-listing-anything' ) }
+						</a>
+						<a
+							className={ `cb-admin-app__nav-link${ activeScreen === 'tags' ? ' is-active' : '' }` }
+							href={ tagsPageUrl || '#' }
+						>
+							{ __( 'Tags', 'cb-listing-anything' ) }
 						</a>
 						<a
 							className={ `cb-admin-app__nav-link${ activeScreen === 'settings' ? ' is-active' : '' }` }

@@ -4,6 +4,8 @@
 import { createRoot } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
 import App from './App';
+import { ToastProvider } from './context/ToastContext';
+import { ConfirmDialogProvider } from './context/ConfirmDialogContext';
 import './style.scss';
 
 function boot() {
@@ -19,10 +21,14 @@ function boot() {
 
 	const root = createRoot( el );
 	root.render(
-		<App
-			screen={ el.dataset.screen || 'list' }
-			initialTab={ el.dataset.tab || 'general' }
-		/>
+		<ToastProvider>
+			<ConfirmDialogProvider>
+				<App
+					screen={ el.dataset.screen || 'list' }
+					initialTab={ el.dataset.tab || 'general' }
+				/>
+			</ConfirmDialogProvider>
+		</ToastProvider>
 	);
 }
 

@@ -10,6 +10,12 @@ class SettingsController extends AbstractController {
 	const OPTION_KEY = 'cb_listing_anything_settings';
 	const MENU_SLUG  = 'cb-listing-anything';
 
+	/** @var string */
+	public const PAGE_CATEGORIES = 'cb-listing-anything-categories';
+
+	/** @var string */
+	public const PAGE_TAGS = 'cb-listing-anything-tags';
+
 	public function init() {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_init', array( $this, 'redirect_legacy_list' ) );
@@ -33,6 +39,9 @@ class SettingsController extends AbstractController {
 		$page = sanitize_key( wp_unslash( $_GET['page'] ) );
 		if ( self::MENU_SLUG . '-settings' === $page ) {
 			$classes .= ' cb-listing-admin-settings-page';
+		}
+		if ( self::PAGE_CATEGORIES === $page || self::PAGE_TAGS === $page ) {
+			$classes .= ' cb-listing-admin-tax-page';
 		}
 		return $classes;
 	}
@@ -96,6 +105,24 @@ class SettingsController extends AbstractController {
 
 		add_submenu_page(
 			self::MENU_SLUG,
+			__( 'Categories', 'cb-listing-anything' ),
+			__( 'Categories', 'cb-listing-anything' ),
+			'edit_posts',
+			self::PAGE_CATEGORIES,
+			array( $this, 'render_admin_categories' )
+		);
+
+		add_submenu_page(
+			self::MENU_SLUG,
+			__( 'Tags', 'cb-listing-anything' ),
+			__( 'Tags', 'cb-listing-anything' ),
+			'edit_posts',
+			self::PAGE_TAGS,
+			array( $this, 'render_admin_tags' )
+		);
+
+		add_submenu_page(
+			self::MENU_SLUG,
 			__( 'Settings', 'cb-listing-anything' ),
 			__( 'Settings', 'cb-listing-anything' ),
 			'manage_options',
@@ -123,6 +150,20 @@ class SettingsController extends AbstractController {
 	}
 
 	/**
+	 * @return void
+	 */
+	public function render_admin_categories() {
+		echo '<div id="cb-listing-admin-root" class="cb-listing-admin-root" data-screen="categories"></div>';
+	}
+
+	/**
+	 * @return void
+	 */
+	public function render_admin_tags() {
+		echo '<div id="cb-listing-admin-root" class="cb-listing-admin-root" data-screen="tags"></div>';
+	}
+
+	/**
 	 * @param string $hook Current admin hook.
 	 * @return void
 	 */
@@ -135,6 +176,8 @@ class SettingsController extends AbstractController {
 		$allowed_pages = array(
 			self::MENU_SLUG,
 			self::MENU_SLUG . '-settings',
+			self::PAGE_CATEGORIES,
+			self::PAGE_TAGS,
 		);
 		if ( ! in_array( $page, $allowed_pages, true ) ) {
 			return;
@@ -155,6 +198,10 @@ class SettingsController extends AbstractController {
 				}
 			);
 			return;
+		}
+
+		if ( self::PAGE_CATEGORIES === $page ) {
+			wp_enqueue_media();
 		}
 
 		$asset = require $asset_file;
@@ -183,6 +230,16 @@ class SettingsController extends AbstractController {
 		$post_type = crocodevs_config( 'post_type.slug' );
 		$pto       = get_post_type_object( $post_type );
 		$rest_base = ( $pto && ! empty( $pto->rest_base ) ) ? $pto->rest_base : $post_type;
+		$all_items_label = ( $pto && isset( $pto->labels->all_items ) && $pto->labels->all_items !== '' )
+			? $pto->labels->all_items
+			: __( 'All Listings', 'cb-listing-anything' );
+
+		$cat_tax = crocodevs_config( 'taxonomies.category' );
+		$tag_tax = crocodevs_config( 'taxonomies.tag' );
+		$cat_to  = get_taxonomy( $cat_tax );
+		$tag_to  = get_taxonomy( $tag_tax );
+		$cat_rest_base = ( $cat_to && ! empty( $cat_to->rest_base ) ) ? $cat_to->rest_base : $cat_tax;
+		$tag_rest_base = ( $tag_to && ! empty( $tag_to->rest_base ) ) ? $tag_to->rest_base : $tag_tax;
 
 		wp_localize_script(
 			'cb-listing-admin',
@@ -197,7 +254,17 @@ class SettingsController extends AbstractController {
 				'adminUrl'        => admin_url(),
 				'listPageUrl'     => admin_url( 'admin.php?page=' . self::MENU_SLUG ),
 				'settingsPageUrl' => admin_url( 'admin.php?page=' . self::MENU_SLUG . '-settings' ),
+				'categoriesPageUrl' => admin_url( 'admin.php?page=' . self::PAGE_CATEGORIES ),
+				'tagsPageUrl'       => admin_url( 'admin.php?page=' . self::PAGE_TAGS ),
+				'categoryTaxonomy'  => $cat_tax,
+				'tagTaxonomy'       => $tag_tax,
+				'categoryRestBase'  => $cat_rest_base,
+				'tagRestBase'       => $tag_rest_base,
+				'categoryImageMetaKey' => CategoryImageController::META_KEY,
+				'termCreatedMetaKey'   => CategoryImageController::TERM_CREATED_META,
+				'termEditBase'      => admin_url( 'term.php' ),
 				'pluginName'      => __( 'CB Listings', 'cb-listing-anything' ),
+				'allItemsLabel'   => $all_items_label,
 			)
 		);
 	}

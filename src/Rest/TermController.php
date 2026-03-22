@@ -43,7 +43,7 @@ class TermController extends AbstractRestController {
 		foreach ( $terms as $term ) {
 			$flat[] = array(
 				'id'     => $term->term_id,
-				'name'   => $term->name,
+				'name'   => RestHtmlEntityDecode::decode_string( $term->name ),
 				'parent' => $term->parent,
 				'count'  => $term->count,
 			);
