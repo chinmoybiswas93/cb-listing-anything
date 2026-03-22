@@ -30,18 +30,39 @@ document.addEventListener( 'DOMContentLoaded', function () {
 			results.innerHTML = '<div class="cb-listing-search__loading"><span class="cb-listing-search__spinner"></span></div>';
 			results.hidden = false;
 
-			fetch( url )
-				.then( function ( response ) { return response.json(); } )
-				.then( function ( data ) {
+			fetch( url, { credentials: 'same-origin' } )
+				.then( function ( response ) {
+					return response.json().then( function ( data ) {
+						return { ok: response.ok, status: response.status, data: data };
+					} );
+				} )
+				.then( function ( payload ) {
 					if ( input.value.trim().length < 2 && ! select.value ) {
 						results.hidden = true;
 						results.innerHTML = '';
 						return;
 					}
-					renderResults( data );
+					if ( ! payload.ok ) {
+						var msg =
+							payload.data && payload.data.message
+								? payload.data.message
+								: 'Something went wrong.';
+						results.innerHTML =
+							'<div class="cb-listing-search__empty">' + escapeHtml( msg ) + '</div>';
+						results.hidden = false;
+						return;
+					}
+					if ( ! Array.isArray( payload.data ) ) {
+						results.innerHTML =
+							'<div class="cb-listing-search__empty">Something went wrong.</div>';
+						results.hidden = false;
+						return;
+					}
+					renderResults( payload.data );
 				} )
 				.catch( function () {
 					results.innerHTML = '<div class="cb-listing-search__empty">Something went wrong.</div>';
+					results.hidden = false;
 				} );
 		}
 

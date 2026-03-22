@@ -1,30 +1,21 @@
 <?php
 
-use CBListingAnything\Rest\SearchController;
-use CBListingAnything\Rest\TermController;
 use CrocoDevs\Http\Router\Router;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes
+| API Routes (CrocoDevs Router)
 |--------------------------------------------------------------------------
 |
-| Define REST API routes for the plugin. Each route is registered under
-| the namespace configured in config/app.php → api_prefix.
+| Public listing search and category routes are registered in
+| SearchController::register_routes() and TermController::register_routes()
+| (see Plugin::run() on rest_api_init) so callbacks receive WP_REST_Request.
+|
+| Registering the same paths here caused duplicate merged routes; WordPress
+| matched the Router wrapper first and passed Request instead of
+| WP_REST_Request, triggering a fatal TypeError on the search endpoint.
 |
 */
 
-Router::get( '/search', array( SearchController::class, 'search_listings' ), array(
-	'keyword'  => array(
-		'type'              => 'string',
-		'sanitize_callback' => 'sanitize_text_field',
-		'default'           => '',
-	),
-	'category' => array(
-		'type'              => 'integer',
-		'sanitize_callback' => 'absint',
-		'default'           => 0,
-	),
-) );
-
-Router::get( '/categories', array( TermController::class, 'get_categories' ) );
+// Intentionally empty — add Router::get() routes only when handlers accept
+// CrocoDevs\Http\Request or pass $request->wpRequest() to typed methods.

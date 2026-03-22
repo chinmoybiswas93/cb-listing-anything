@@ -45,6 +45,14 @@ class SearchController extends AbstractRestController {
 	public function search_listings( WP_REST_Request $request ) {
 		$data = $request->get_params();
 
+		// REST may pass query args as non-strings; coerce for validation.
+		if ( isset( $data['keyword'] ) && is_array( $data['keyword'] ) ) {
+			$data['keyword'] = implode( ' ', array_map( 'strval', $data['keyword'] ) );
+		}
+		if ( isset( $data['keyword'] ) && ! is_string( $data['keyword'] ) ) {
+			$data['keyword'] = (string) $data['keyword'];
+		}
+
 		$validation = Validator::make( $data, array(
 			'keyword'  => 'nullable|string|max:200',
 			'category' => 'nullable|integer',
