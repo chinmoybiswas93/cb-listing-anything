@@ -3,6 +3,7 @@
  * Listing details meta box template.
  *
  * @var array $values Prepared listing meta values.
+ * @var array $enabled_fields Field keys allowed in settings (set by MetaBoxController).
  */
 
 use CBListingAnything\Models\ListingMeta;

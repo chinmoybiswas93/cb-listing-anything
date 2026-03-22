@@ -240,6 +240,10 @@ class MetaBoxController extends AbstractController {
 			}
 		}
 
+		$enabled_fields = ListingMeta::normalize_enabled_fields(
+			SettingsController::get( 'enabled_fields', null )
+		);
+
 		include crocodevs_view_path( 'admin/meta-box-listing-details' );
 	}
 
