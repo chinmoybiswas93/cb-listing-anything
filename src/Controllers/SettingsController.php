@@ -12,9 +12,56 @@ class SettingsController extends AbstractController {
 
 	public function init() {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
+		add_action( 'admin_init', array( $this, 'redirect_legacy_list' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_filter( 'parent_file', array( $this, 'fix_taxonomy_parent_menu' ) );
 		add_action( 'update_option_' . self::OPTION_KEY, array( $this, 'maybe_flush_rewrite_rules' ), 10, 3 );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
+		add_filter( 'admin_body_class', array( $this, 'filter_admin_body_class_settings_page' ) );
+	}
+
+	/**
+	 * Adds a body class on the React settings screen so CSS can remove wp-admin .wrap / content gutters.
+	 *
+	 * @param string $classes Space-separated body classes.
+	 * @return string
+	 */
+	public function filter_admin_body_class_settings_page( $classes ) {
+		if ( ! isset( $_GET['page'] ) ) {
+			return $classes;
+		}
+		$page = sanitize_key( wp_unslash( $_GET['page'] ) );
+		if ( self::MENU_SLUG . '-settings' === $page ) {
+			$classes .= ' cb-listing-admin-settings-page';
+		}
+		return $classes;
+	}
+
+	public function redirect_legacy_list() {
+		if ( ! is_admin() ) {
+			return;
+		}
+
+		global $pagenow;
+		if ( 'edit.php' !== $pagenow ) {
+			return;
+		}
+
+		if ( empty( $_GET['post_type'] ) ) {
+			return;
+		}
+
+		$pt = sanitize_key( wp_unslash( $_GET['post_type'] ) );
+		if ( crocodevs_config( 'post_type.slug' ) !== $pt ) {
+			return;
+		}
+
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			return;
+		}
+
+		wp_safe_redirect( admin_url( 'admin.php?page=' . self::MENU_SLUG ) );
+		exit;
 	}
 
 	public function fix_taxonomy_parent_menu( $parent_file ) {
@@ -31,27 +78,20 @@ class SettingsController extends AbstractController {
 		add_menu_page(
 			__( 'CB Listings', 'cb-listing-anything' ),
 			__( 'CB Listings', 'cb-listing-anything' ),
-			'manage_options',
+			'edit_posts',
 			self::MENU_SLUG,
-			'__return_empty_string',
+			array( $this, 'render_admin_list' ),
 			'dashicons-list-view',
 			26
 		);
 
 		add_submenu_page(
 			self::MENU_SLUG,
-			__( 'Categories', 'cb-listing-anything' ),
-			__( 'Categories', 'cb-listing-anything' ),
-			'manage_categories',
-			'edit-tags.php?taxonomy=' . crocodevs_config( 'taxonomies.category' ) . '&post_type=' . crocodevs_config( 'post_type.slug' )
-		);
-
-		add_submenu_page(
+			__( 'All Listings', 'cb-listing-anything' ),
+			__( 'All Listings', 'cb-listing-anything' ),
+			'edit_posts',
 			self::MENU_SLUG,
-			__( 'Tags', 'cb-listing-anything' ),
-			__( 'Tags', 'cb-listing-anything' ),
-			'manage_categories',
-			'edit-tags.php?taxonomy=' . crocodevs_config( 'taxonomies.tag' ) . '&post_type=' . crocodevs_config( 'post_type.slug' )
+			array( $this, 'render_admin_list' )
 		);
 
 		add_submenu_page(
@@ -60,69 +100,148 @@ class SettingsController extends AbstractController {
 			__( 'Settings', 'cb-listing-anything' ),
 			'manage_options',
 			self::MENU_SLUG . '-settings',
-			array( $this, 'render_settings_page' )
+			array( $this, 'render_admin_settings' )
+		);
+	}
+
+	/**
+	 * @return void
+	 */
+	public function render_admin_list() {
+		echo '<div id="cb-listing-admin-root" class="cb-listing-admin-root" data-screen="list"></div>';
+	}
+
+	/**
+	 * @return void
+	 */
+	public function render_admin_settings() {
+		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'general';
+		if ( ! in_array( $tab, array( 'general', 'fields', 'display', 'advanced' ), true ) ) {
+			$tab = 'general';
+		}
+		echo '<div id="cb-listing-admin-root" class="cb-listing-admin-root cb-listing-admin-root--settings" data-screen="settings" data-tab="' . esc_attr( $tab ) . '"></div>';
+	}
+
+	/**
+	 * @param string $hook Current admin hook.
+	 * @return void
+	 */
+	public function enqueue_admin_assets( $hook_suffix ) {
+		// Do not rely on $hook_suffix: WordPress builds it as "{sanitize_title(menu_title)}_page_{slug}", not "toplevel_page_{slug}".
+		if ( ! isset( $_GET['page'] ) ) {
+			return;
+		}
+		$page = sanitize_key( wp_unslash( $_GET['page'] ) );
+		$allowed_pages = array(
+			self::MENU_SLUG,
+			self::MENU_SLUG . '-settings',
+		);
+		if ( ! in_array( $page, $allowed_pages, true ) ) {
+			return;
+		}
+
+		$asset_file = CB_LISTING_ANYTHING_PLUGIN_DIR . 'build/admin/index.asset.php';
+		$script_file = CB_LISTING_ANYTHING_PLUGIN_DIR . 'build/admin/index.js';
+		if ( ! file_exists( $asset_file ) || ! file_exists( $script_file ) ) {
+			add_action(
+				'admin_notices',
+				static function () {
+					if ( ! current_user_can( 'edit_posts' ) ) {
+						return;
+					}
+					echo '<div class="notice notice-warning"><p>';
+					echo esc_html__( 'CB Listing admin UI assets are missing. In the plugin folder run: npm install, then npm run build (production) or npm run start (development — builds blocks and admin).', 'cb-listing-anything' );
+					echo '</p></div>';
+				}
+			);
+			return;
+		}
+
+		$asset = require $asset_file;
+		$ver   = isset( $asset['version'] ) ? $asset['version'] : CB_LISTING_ANYTHING_VERSION;
+		$deps  = isset( $asset['dependencies'] ) ? $asset['dependencies'] : array();
+
+		$style_path = CB_LISTING_ANYTHING_PLUGIN_DIR . 'build/admin/style-index.css';
+		if ( file_exists( $style_path ) ) {
+			wp_enqueue_style(
+				'cb-listing-admin',
+				CB_LISTING_ANYTHING_PLUGIN_URL . 'build/admin/style-index.css',
+				array( 'common' ),
+				$ver
+			);
+			wp_style_add_data( 'cb-listing-admin', 'rtl', 'replace' );
+		}
+
+		wp_enqueue_script(
+			'cb-listing-admin',
+			CB_LISTING_ANYTHING_PLUGIN_URL . 'build/admin/index.js',
+			array_merge( array( 'wp-element', 'wp-components', 'wp-api-fetch', 'wp-i18n', 'wp-url' ), $deps ),
+			$ver,
+			true
+		);
+
+		$post_type = crocodevs_config( 'post_type.slug' );
+		$pto       = get_post_type_object( $post_type );
+		$rest_base = ( $pto && ! empty( $pto->rest_base ) ) ? $pto->rest_base : $post_type;
+
+		wp_localize_script(
+			'cb-listing-admin',
+			'cbListingAdmin',
+			array(
+				'restUrl'         => esc_url_raw( rest_url() ),
+				'nonce'           => wp_create_nonce( 'wp_rest' ),
+				'postType'        => $post_type,
+				'restBase'        => $rest_base,
+				'namespace'       => crocodevs_config( 'app.api_prefix' ),
+				'newPostUrl'      => admin_url( 'post-new.php?post_type=' . rawurlencode( $post_type ) ),
+				'adminUrl'        => admin_url(),
+				'listPageUrl'     => admin_url( 'admin.php?page=' . self::MENU_SLUG ),
+				'settingsPageUrl' => admin_url( 'admin.php?page=' . self::MENU_SLUG . '-settings' ),
+				'pluginName'      => __( 'CB Listings', 'cb-listing-anything' ),
+			)
 		);
 	}
 
 	public function register_settings() {
-		register_setting( 'cb_listing_anything_general', self::OPTION_KEY, array(
-			'type'              => 'array',
-			'sanitize_callback' => array( $this, 'sanitize_settings' ),
-			'default'           => self::defaults(),
-		) );
-
-		add_settings_section(
-			'cb_listing_general_section',
-			__( 'General Settings', 'cb-listing-anything' ),
-			'__return_empty_string',
-			'cb_listing_anything_general'
-		);
-
-		add_settings_field(
-			'currency',
-			__( 'Currency', 'cb-listing-anything' ),
-			array( $this, 'render_currency_field' ),
+		register_setting(
 			'cb_listing_anything_general',
-			'cb_listing_general_section'
-		);
-
-		add_settings_field(
-			'listing_title',
-			__( 'Listing title', 'cb-listing-anything' ),
-			array( $this, 'render_listing_title_field' ),
-			'cb_listing_anything_general',
-			'cb_listing_general_section'
-		);
-
-		add_settings_field(
-			'listing_slug',
-			__( 'Listing slug', 'cb-listing-anything' ),
-			array( $this, 'render_listing_slug_field' ),
-			'cb_listing_anything_general',
-			'cb_listing_general_section'
+			self::OPTION_KEY,
+			array(
+				'type'              => 'array',
+				'sanitize_callback' => array( $this, 'sanitize_settings' ),
+				'default'           => self::defaults(),
+			)
 		);
 	}
 
-	public function sanitize_settings( $input ) {
+	/**
+	 * Merge a partial settings patch into stored options (REST and legacy forms).
+	 *
+	 * @param array $patch Keys: currency, listing_title, listing_slug, enabled_fields (optional).
+	 * @return array{settings: array, errors: string[]}
+	 */
+	public static function merge_settings_patch( array $patch ) {
 		$sanitized = get_option( self::OPTION_KEY, self::defaults() );
 		if ( ! is_array( $sanitized ) ) {
 			$sanitized = self::defaults();
 		}
 
-		if ( isset( $input['currency'] ) ) {
-			$valid = array_keys( self::currencies() );
-			$sanitized['currency'] = in_array( $input['currency'], $valid, true ) ? $input['currency'] : 'USD';
+		$errors = array();
+
+		if ( isset( $patch['currency'] ) ) {
+			$valid                   = array_keys( self::currencies() );
+			$sanitized['currency'] = in_array( $patch['currency'], $valid, true ) ? $patch['currency'] : 'USD';
 		}
 
-		if ( isset( $input['listing_title'] ) ) {
-			$sanitized['listing_title'] = sanitize_text_field( $input['listing_title'] );
+		if ( isset( $patch['listing_title'] ) ) {
+			$sanitized['listing_title'] = sanitize_text_field( $patch['listing_title'] );
 			if ( $sanitized['listing_title'] === '' ) {
 				$sanitized['listing_title'] = self::defaults()['listing_title'];
 			}
 		}
 
-		if ( isset( $input['listing_slug'] ) ) {
-			$raw_slug = sanitize_text_field( $input['listing_slug'] );
+		if ( isset( $patch['listing_slug'] ) ) {
+			$raw_slug = sanitize_text_field( $patch['listing_slug'] );
 			$slug     = sanitize_title( $raw_slug, '', 'save' );
 			$slug     = str_replace( ' ', '-', strtolower( $slug ) );
 			$slug     = preg_replace( '/[^a-z0-9_-]/', '', $slug );
@@ -130,18 +249,12 @@ class SettingsController extends AbstractController {
 			if ( $slug !== '' && self::is_slug_unique( $slug ) ) {
 				$sanitized['listing_slug'] = $slug;
 			} elseif ( $slug !== '' ) {
-				add_settings_error(
-					'cb_listing_anything_general',
-					'listing_slug_duplicate',
-					__( 'This slug is already in use by another post type or is reserved. Please choose a unique slug.', 'cb-listing-anything' ),
-					'error'
-				);
+				$errors[] = __( 'This slug is already in use by another post type or is reserved. Please choose a unique slug.', 'cb-listing-anything' );
 			}
 		}
 
-		if ( array_key_exists( 'enabled_fields', $input ) ) {
-			$raw_enabled = $input['enabled_fields'];
-
+		if ( array_key_exists( 'enabled_fields', $patch ) ) {
+			$raw_enabled = $patch['enabled_fields'];
 			if ( ! is_array( $raw_enabled ) ) {
 				$raw_enabled = array();
 			}
@@ -156,23 +269,43 @@ class SettingsController extends AbstractController {
 
 			$enabled = array_values( array_unique( $enabled ) );
 
-		// Empty selection falls back to all fields enabled.
-		if ( empty( $enabled ) ) {
-			$enabled = ListingMetaModel::fields();
+			if ( empty( $enabled ) ) {
+				$enabled = ListingMetaModel::fields();
 			}
 
 			$sanitized['enabled_fields'] = $enabled;
 		}
 
-		return $sanitized;
+		return array(
+			'settings' => $sanitized,
+			'errors'   => $errors,
+		);
+	}
+
+	public function sanitize_settings( $input ) {
+		if ( ! is_array( $input ) ) {
+			return get_option( self::OPTION_KEY, self::defaults() );
+		}
+
+		$result = self::merge_settings_patch( $input );
+		foreach ( $result['errors'] as $message ) {
+			add_settings_error(
+				'cb_listing_anything_general',
+				'cb_listing_settings',
+				$message,
+				'error'
+			);
+		}
+
+		return $result['settings'];
 	}
 
 	/**
 	 * Flush rewrite rules when listing_slug changes so archive and taxonomy URLs update.
 	 *
-	 * @param mixed $old_value Old option value.
-	 * @param mixed $value     New option value.
-	 * @param string $option   Option name.
+	 * @param mixed  $old_value Old option value.
+	 * @param mixed  $value     New option value.
+	 * @param string $option    Option name.
 	 */
 	public function maybe_flush_rewrite_rules( $old_value, $value, $option ) {
 		$old_slug = is_array( $old_value ) && isset( $old_value['listing_slug'] ) ? $old_value['listing_slug'] : '';
@@ -182,278 +315,8 @@ class SettingsController extends AbstractController {
 		}
 	}
 
-	public function render_currency_field() {
-		$value      = self::get( 'currency', 'USD' );
-		$currencies = self::currencies();
-		?>
-		<select name="<?php echo esc_attr( self::OPTION_KEY ); ?>[currency]" id="cb_listing_currency">
-			<?php foreach ( $currencies as $code => $label ) : ?>
-			<option value="<?php echo esc_attr( $code ); ?>" <?php selected( $value, $code ); ?>><?php echo esc_html( $label ); ?></option>
-			<?php endforeach; ?>
-		</select>
-		<p class="description"><?php esc_html_e( 'Select the currency to display with listing prices.', 'cb-listing-anything' ); ?></p>
-		<?php
-	}
-
-	public function render_listing_title_field() {
-		$value = self::get( 'listing_title', self::defaults()['listing_title'] );
-		?>
-		<input type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[listing_title]" id="cb_listing_title" value="<?php echo esc_attr( $value ); ?>" class="regular-text" />
-		<p class="description"><?php esc_html_e( 'Label used in the admin (e.g. "Listing", "Property").', 'cb-listing-anything' ); ?></p>
-		<?php
-	}
-
-	public function render_listing_slug_field() {
-		$value       = self::get( 'listing_slug', self::defaults()['listing_slug'] );
-		$archive_url = home_url( '/' . $value . '/' );
-		?>
-		<input type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[listing_slug]" id="cb_listing_slug" value="<?php echo esc_attr( $value ); ?>" class="regular-text" />
-		<p class="description">
-			<?php esc_html_e( 'URL slug for the listing archive. Must be unique (not used by posts, pages, or other post types). Category and tag archives will use this slug (e.g. slug-category, slug-tag).', 'cb-listing-anything' ); ?>
-		</p>
-		<p class="description">
-			<?php esc_html_e( 'Note: Permalinks need to be flushed manually when you save so the new URL is active (e.g. go to Settings → Permalinks and click Save).', 'cb-listing-anything' ); ?>
-		</p>
-		<p class="description">
-			<?php esc_html_e( 'Archive URL:', 'cb-listing-anything' ); ?>
-			<a href="<?php echo esc_url( $archive_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $archive_url ); ?></a>
-		</p>
-		<?php
-	}
-
-	public function render_settings_page() {
-		$current_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'general';
-		$tabs        = array(
-			'general'  => __( 'General', 'cb-listing-anything' ),
-			'fields'   => __( 'Fields', 'cb-listing-anything' ),
-			'display'  => __( 'Display', 'cb-listing-anything' ),
-			'advanced' => __( 'Advanced', 'cb-listing-anything' ),
-		);
-		?>
-		<div class="wrap">
-			<h1><?php esc_html_e( 'CB Listing Settings', 'cb-listing-anything' ); ?></h1>
-
-			<nav class="nav-tab-wrapper">
-				<?php foreach ( $tabs as $slug => $label ) :
-					$url    = add_query_arg( array( 'page' => self::MENU_SLUG . '-settings', 'tab' => $slug ), admin_url( 'admin.php' ) );
-					$active = ( $current_tab === $slug ) ? ' nav-tab-active' : '';
-				?>
-				<a href="<?php echo esc_url( $url ); ?>" class="nav-tab<?php echo esc_attr( $active ); ?>"><?php echo esc_html( $label ); ?></a>
-				<?php endforeach; ?>
-			</nav>
-
-			<div class="cb-listing-settings-content" style="margin-top: 20px;">
-				<?php
-				switch ( $current_tab ) {
-					case 'fields':
-						$this->render_tab_fields();
-						break;
-					case 'display':
-						$this->render_tab_display();
-						break;
-					case 'advanced':
-						$this->render_tab_advanced();
-						break;
-					default:
-						$this->render_tab_general();
-						break;
-				}
-				?>
-			</div>
-		</div>
-		<?php
-	}
-
-	private function render_tab_general() {
-		settings_errors( 'cb_listing_anything_general' );
-		?>
-		<form method="post" action="options.php">
-			<?php
-			settings_fields( 'cb_listing_anything_general' );
-			do_settings_sections( 'cb_listing_anything_general' );
-			submit_button();
-			?>
-		</form>
-		<?php
-	}
-
-	private function render_tab_display() {
-		?>
-		<div class="card" style="max-width: 800px; padding: 20px;">
-			<h2><?php esc_html_e( 'Display Settings', 'cb-listing-anything' ); ?></h2>
-			<p><?php esc_html_e( 'Display settings will be available in a future update.', 'cb-listing-anything' ); ?></p>
-		</div>
-		<?php
-	}
-
-	private function render_tab_advanced() {
-		?>
-		<div class="card" style="max-width: 800px; padding: 20px;">
-			<h2><?php esc_html_e( 'Advanced Settings', 'cb-listing-anything' ); ?></h2>
-			<p><?php esc_html_e( 'Advanced settings will be available in a future update.', 'cb-listing-anything' ); ?></p>
-		</div>
-		<?php
-	}
-
-	/**
-	 * Render the Fields settings tab.
-	 *
-	 * @return void
-	 */
-	private function render_tab_fields() {
-		$definitions      = ListingMetaModel::definitions();
-		$categories       = ListingMetaModel::categories();
-		$grouped          = ListingMetaModel::fields_by_category();
-		$current_enabled  = ListingMetaModel::normalize_enabled_fields( self::get( 'enabled_fields', null ) );
-		$enabled_lookup   = array_fill_keys( $current_enabled, true );
-		$option_key_esc   = esc_attr( self::OPTION_KEY );
-		$settings_group   = 'cb_listing_anything_general';
-		?>
-		<style>
-			.cb-listing-fields-settings {
-				max-width: 960px;
-			}
-			.cb-listing-fields-card {
-				background: #fff;
-				border: 1px solid #dcdcde;
-				border-radius: 8px;
-				padding: 20px 22px;
-				margin-bottom: 20px;
-				box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-			}
-			.cb-listing-fields-card-header {
-				display: flex;
-				justify-content: space-between;
-				align-items: center;
-				gap: 12px;
-				margin-bottom: 8px;
-			}
-			.cb-listing-fields-card-header h2 {
-				margin: 0;
-				font-size: 15px;
-				font-weight: 600;
-			}
-			.cb-listing-fields-count {
-				font-size: 12px;
-				color: #50575e;
-				background: #f6f7f7;
-				border-radius: 999px;
-				padding: 2px 10px;
-			}
-			.cb-listing-fields-grid {
-				display: grid;
-				grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-				gap: 8px 16px;
-				margin-top: 12px;
-			}
-			.cb-listing-field {
-				display: flex;
-				align-items: flex-start;
-				gap: 8px;
-				padding: 8px 10px;
-				border-radius: 6px;
-				border: 1px solid transparent;
-			}
-			.cb-listing-field input[type="checkbox"] {
-				margin-top: 2px;
-			}
-			.cb-listing-field-main {
-				display: flex;
-				flex-direction: column;
-				gap: 2px;
-			}
-			.cb-listing-field-label {
-				font-size: 13px;
-				font-weight: 500;
-				color: #1e1e1e;
-			}
-			.cb-listing-field-meta {
-				font-size: 11px;
-				color: #646970;
-				text-transform: capitalize;
-			}
-			.cb-listing-field:hover {
-				background: #f6f7f7;
-				border-color: #d0d1d4;
-			}
-			@media (max-width: 782px) {
-				.cb-listing-fields-card {
-					padding: 16px;
-				}
-				.cb-listing-fields-grid {
-					grid-template-columns: 1fr;
-				}
-			}
-		</style>
-		<form method="post" action="options.php">
-			<?php
-			settings_fields( $settings_group );
-			?>
-			<div class="cb-listing-fields-settings">
-				<?php foreach ( $categories as $slug => $category ) :
-					$label       = isset( $category['label'] ) ? $category['label'] : ucfirst( $slug );
-					$fields_in_category = isset( $grouped[ $slug ]['fields'] ) ? $grouped[ $slug ]['fields'] : array();
-					$total_count       = count( $fields_in_category );
-
-					if ( 0 === $total_count ) {
-						continue;
-					}
-
-					$enabled_count = 0;
-					foreach ( $fields_in_category as $field_key => $field_def ) {
-						if ( isset( $enabled_lookup[ $field_key ] ) ) {
-							$enabled_count++;
-						}
-					}
-
-					?>
-					<div class="cb-listing-fields-card">
-						<div class="cb-listing-fields-card-header">
-							<h2><?php echo esc_html( $label ); ?></h2>
-							<span class="cb-listing-fields-count">
-								<?php
-								printf(
-									/* translators: 1: enabled count, 2: total fields */
-									'%1$d / %2$d %3$s',
-									(int) $enabled_count,
-									(int) $total_count,
-									1 === $total_count ? esc_html__( 'field', 'cb-listing-anything' ) : esc_html__( 'fields', 'cb-listing-anything' )
-								);
-								?>
-							</span>
-						</div>
-						<div class="cb-listing-fields-grid">
-							<?php foreach ( $fields_in_category as $field_key => $field_def ) :
-								$field_label = isset( $field_def['label'] ) ? $field_def['label'] : $field_key;
-								$field_type  = isset( $field_def['type'] ) ? $field_def['type'] : 'text';
-								$checked     = isset( $enabled_lookup[ $field_key ] );
-								?>
-								<label class="cb-listing-field">
-									<input
-										type="checkbox"
-										name="<?php echo $option_key_esc; ?>[enabled_fields][]"
-										value="<?php echo esc_attr( $field_key ); ?>"
-										<?php checked( $checked ); ?>
-									/>
-									<span class="cb-listing-field-main">
-										<span class="cb-listing-field-label"><?php echo esc_html( $field_label ); ?></span>
-										<span class="cb-listing-field-meta">
-											<?php echo esc_html( ListingMetaModel::get_type_label( $field_type ) ); ?>
-										</span>
-									</span>
-								</label>
-							<?php endforeach; ?>
-						</div>
-					</div>
-				<?php endforeach; ?>
-			</div>
-			<?php submit_button(); ?>
-		</form>
-		<?php
-	}
-
 	public static function get( $key, $default = '' ) {
-		$options  = get_option( self::OPTION_KEY, self::defaults() );
+		$options = get_option( self::OPTION_KEY, self::defaults() );
 		return isset( $options[ $key ] ) ? $options[ $key ] : $default;
 	}
 

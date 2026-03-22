@@ -23,7 +23,7 @@ class PostTypeController extends AbstractController {
 			'hierarchical'        => false,
 			'public'              => true,
 			'show_ui'             => true,
-			'show_in_menu'        => 'cb-listing-anything',
+			'show_in_menu'        => false,
 			'menu_position'       => 20,
 			'menu_icon'           => 'dashicons-list-view',
 			'show_in_admin_bar'   => true,
@@ -43,7 +43,7 @@ class PostTypeController extends AbstractController {
 		if ( $title !== '' ) {
 			$args['label'] = $title;
 			$args['labels'] = array_merge( $args['labels'], array(
-				'name'          => $title . 's',
+				'name'          => 'All ' .$title . 's',
 				'singular_name' => $title,
 				'menu_name'     => $title . 's',
 				'archives'      => $title . ' ' . __( 'Archives', 'cb-listing-anything' ),
@@ -62,7 +62,7 @@ class PostTypeController extends AbstractController {
 	 */
 	private function labels() {
 		return array(
-			'name'                  => _x( 'Listings', 'Post Type General Name', 'cb-listing-anything' ),
+			'name'                  => _x( 'Listing', 'Post Type General Name', 'cb-listing-anything' ),
 			'singular_name'         => _x( 'Listing', 'Post Type Singular Name', 'cb-listing-anything' ),
 			'menu_name'             => __( 'Listings', 'cb-listing-anything' ),
 			'name_admin_bar'        => __( 'Listing', 'cb-listing-anything' ),

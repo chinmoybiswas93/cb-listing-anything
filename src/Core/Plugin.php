@@ -9,6 +9,7 @@ use CBListingAnything\Controllers\MetaBoxController;
 use CBListingAnything\Controllers\PostTypeController;
 use CBListingAnything\Controllers\SettingsController;
 use CBListingAnything\Controllers\TaxonomyController;
+use CBListingAnything\Rest\AdminSettingsController;
 use CBListingAnything\Rest\SearchController as RestSearchController;
 use CBListingAnything\Rest\TermController as RestTermController;
 use CrocoDevs\Container\ServiceManager;
@@ -66,6 +67,11 @@ class Plugin {
 	private $rest_term_controller;
 
 	/**
+	 * @var AdminSettingsController
+	 */
+	private $rest_admin_settings_controller;
+
+	/**
 	 * @var CategoryImageController
 	 */
 	private $category_image_controller;
@@ -98,6 +104,7 @@ class Plugin {
 		$this->media_controller          = ServiceManager::get( 'cb.listing.media_controller' ) ?: new MediaController();
 		$this->rest_search_controller    = ServiceManager::get( 'cb.listing.rest.search_controller' ) ?: new RestSearchController();
 		$this->rest_term_controller      = ServiceManager::get( 'cb.listing.rest.term_controller' ) ?: new RestTermController();
+		$this->rest_admin_settings_controller = ServiceManager::get( 'cb.listing.rest.admin_settings_controller' ) ?: new AdminSettingsController();
 	}
 
 	/**
@@ -117,6 +124,7 @@ class Plugin {
 		$this->media_controller->init();
 		add_action( 'rest_api_init', array( $this->rest_search_controller, 'register_routes' ) );
 		add_action( 'rest_api_init', array( $this->rest_term_controller, 'register_routes' ) );
+		add_action( 'rest_api_init', array( $this->rest_admin_settings_controller, 'register_routes' ) );
 	}
 
 	/**
