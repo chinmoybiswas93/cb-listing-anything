@@ -375,6 +375,171 @@ body.cb-listing-admin-settings-page #wpbody-content .wrap {
 	}
 }
 
+/* Search + sort/columns icons (listings toolbar end) */
+.cb-admin-list__toolbar-end {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 10px;
+	flex: 0 1 auto;
+	min-width: 0;
+}
+
+.cb-admin-list__toolbar-tools {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.cb-admin-toolbar-tool {
+	position: relative;
+}
+
+.cb-admin-toolbar-icon-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	border-radius: 8px;
+	border: 1px solid var(--cb-admin-border);
+	background: #fff;
+	color: var(--cb-admin-muted);
+	cursor: pointer;
+	line-height: 1;
+
+	&:hover,
+	&.is-active {
+		color: var(--cb-admin-text);
+		border-color: #c3c4c7;
+		background: #fafafa;
+	}
+}
+
+.cb-admin-toolbar-icon {
+	display: block;
+	flex-shrink: 0;
+}
+
+.cb-admin-toolbar-popover {
+	position: absolute;
+	top: calc(100% + 6px);
+	right: 0;
+	z-index: 200;
+	min-width: 280px;
+	max-width: min(360px, 92vw);
+	padding: 14px 16px;
+	background: #fff;
+	border: 1px solid var(--cb-admin-border);
+	border-radius: 10px;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+	box-sizing: border-box;
+}
+
+.cb-admin-toolbar-popover__title {
+	font-size: 13px;
+	font-weight: 700;
+	color: var(--cb-admin-text);
+	margin: 0 0 12px;
+}
+
+.cb-admin-toolbar-popover__radios,
+.cb-admin-toolbar-popover__checks {
+	list-style: none;
+	margin: 0 0 12px;
+	padding: 0;
+	max-height: 220px;
+	overflow-y: auto;
+}
+
+.cb-admin-toolbar-popover__radios li,
+.cb-admin-toolbar-popover__checks li {
+	margin: 0 0 8px;
+
+	&:last-child {
+		margin-bottom: 0;
+	}
+}
+
+.cb-admin-toolbar-popover__radio,
+.cb-admin-toolbar-popover__check {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	font-size: 13px;
+	line-height: 1.35;
+	color: var(--cb-admin-text);
+	cursor: pointer;
+
+	&.is-disabled {
+		opacity: 0.45;
+		cursor: not-allowed;
+	}
+
+	input {
+		margin: 2px 0 0;
+		flex-shrink: 0;
+	}
+}
+
+.cb-admin-toolbar-popover__order {
+	margin-bottom: 12px;
+}
+
+.cb-admin-toolbar-popover__order-label {
+	display: block;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--cb-admin-muted);
+	margin-bottom: 8px;
+}
+
+.cb-admin-toolbar-popover__order-btns {
+	display: flex;
+	gap: 8px;
+}
+
+.cb-admin-toolbar-popover__order-btn {
+	flex: 1;
+	padding: 6px 10px;
+	font-size: 12px;
+	border-radius: 6px;
+	border: 1px solid var(--cb-admin-border);
+	background: #fff;
+	color: var(--cb-admin-text);
+	cursor: pointer;
+
+	&.is-active {
+		background: #1e1e1e;
+		color: #fff;
+		border-color: #1e1e1e;
+	}
+}
+
+.cb-admin-toolbar-popover__reset {
+	display: block;
+	width: 100%;
+	margin-bottom: 10px;
+	padding: 8px 12px;
+	font-size: 13px;
+	border-radius: 8px;
+	border: 1px solid var(--cb-admin-border);
+	background: #fff;
+	color: var(--cb-admin-text);
+	cursor: pointer;
+
+	&:hover {
+		background: #fafafa;
+	}
+}
+
+.cb-admin-toolbar-popover__apply {
+	width: 100%;
+	justify-content: center;
+}
+
 .cb-admin-list__search {
 	display: flex;
 	gap: 8px;
@@ -462,14 +627,8 @@ body.cb-listing-admin-settings-page #wpbody-content .wrap {
 	margin-top: 6px;
 }
 
-/* Categories table: space after checkbox column; narrow Actions flush right */
+/* Categories / tags table: Actions column; checkbox + image use global .cb-admin-list rhythm */
 .cb-admin-tax-layout__column {
-	.cb-admin-table__col-check,
-	th.cb-admin-table__col-check {
-		padding-right: 18px !important;
-		padding-left: 16px !important;
-	}
-
 	.cb-admin-table__col-actions,
 	th.cb-admin-table__col-actions {
 		min-width: 9rem !important;
@@ -482,10 +641,39 @@ body.cb-listing-admin-settings-page #wpbody-content .wrap {
 		white-space: nowrap;
 	}
 
-	.cb-admin-table__actions {
+	.cb-admin-table__col-actions:not(th) {
 		text-align: right;
 		padding-left: 8px !important;
 		padding-right: 16px !important;
+	}
+
+	th.cb-admin-table__col-description,
+	td.cb-admin-table__col-description {
+		vertical-align: top;
+		max-width: 22rem;
+	}
+
+	.cb-admin-table__term-description {
+		font-size: 13px;
+		line-height: 1.45;
+		color: var(--cb-admin-muted);
+		max-height: 4.6em;
+		overflow: hidden;
+		display: -webkit-box;
+		-webkit-line-clamp: 3;
+		-webkit-box-orient: vertical;
+
+		p {
+			margin: 0 0 0.35em;
+
+			&:last-child {
+				margin-bottom: 0;
+			}
+		}
+	}
+
+	.cb-admin-table__empty-cell {
+		color: var(--cb-admin-border);
 	}
 }
 
@@ -782,9 +970,11 @@ body.cb-listing-admin-settings-page #wpbody-content .wrap {
 	width: 100%;
 	border-collapse: collapse;
 	table-layout: fixed;
+	border-spacing: 0;
 
 	th,
 	td {
+		box-sizing: border-box;
 		padding: 12px 14px;
 		text-align: left;
 		vertical-align: middle;
@@ -798,6 +988,7 @@ body.cb-listing-admin-settings-page #wpbody-content .wrap {
 		color: var(--cb-admin-muted);
 		background: #fafafa;
 		white-space: nowrap;
+		vertical-align: middle;
 	}
 
 	tr:last-child td {
@@ -860,13 +1051,26 @@ body.cb-listing-admin-settings-page #wpbody-content .wrap {
 	width: min(100%, 160px);
 }
 
+.cb-admin-table__skeleton-line--desc {
+	width: min(100%, 180px);
+}
+
 .cb-admin-table__skeleton-line--actions {
 	width: min(100%, 140px);
 }
 
-/* Widths: colgroup % (4+3+8+28+11+12+14+20 = 100%); min-widths keep content readable */
+.cb-admin-table__col-actions .cb-admin-table__skeleton-line--actions {
+	display: block;
+	margin-left: auto;
+}
+
+/*
+ * Column padding: th/td share same rules so headers align with body cells.
+ * Listings + Categories/Tags: one rhythm — edge inset (16px) ≈ gap between checkbox ↔ # ↔ image
+ * (8px cell padding + 8px next cell = 16px).
+ */
 .cb-admin-table__col-check {
-	padding: 12px 10px 12px 18px !important;
+	padding: 12px 8px 12px 16px !important;
 	text-align: center;
 	min-width: 52px;
 
@@ -877,18 +1081,18 @@ body.cb-listing-admin-settings-page #wpbody-content .wrap {
 }
 
 .cb-admin-table__col-num {
-	padding: 12px 10px 12px 6px !important;
+	padding: 12px 8px 12px 8px !important;
 	text-align: right;
 	font-size: 12px;
 	font-weight: 500;
 	font-variant-numeric: tabular-nums;
 	color: var(--cb-admin-muted);
-	min-width: 40px;
+	min-width: 0;
 }
 
 .cb-admin-table__col-thumb {
-	min-width: 56px;
-	padding: 10px 8px !important;
+	min-width: 52px;
+	padding: 10px 8px 10px 8px !important;
 	text-align: center;
 	vertical-align: middle;
 
@@ -898,6 +1102,40 @@ body.cb-listing-admin-settings-page #wpbody-content .wrap {
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
+}
+
+/*
+ * Listings table only (not categories/tags): match colgroup fixed % — cap cell min-widths
+ * that were stretching checkbox / # / image columns in table-layout: fixed.
+ */
+.cb-admin-list:not(.cb-admin-tax-layout) {
+	.cb-admin-table thead th.cb-admin-table__col-check,
+	.cb-admin-table tbody td.cb-admin-table__col-check {
+		min-width: 0 !important;
+		max-width: 3rem;
+		padding: 12px 6px 12px 14px !important;
+	}
+
+	.cb-admin-table thead th.cb-admin-table__col-num,
+	.cb-admin-table tbody td.cb-admin-table__col-num {
+		min-width: 0;
+		max-width: 2.75rem;
+		padding: 12px 6px !important;
+	}
+
+	.cb-admin-table thead th.cb-admin-table__col-thumb,
+	.cb-admin-table tbody td.cb-admin-table__col-thumb {
+		min-width: 0 !important;
+		max-width: 4.5rem;
+		padding: 10px 6px !important;
+	}
+}
+
+/* Listings + taxonomies: thumb padding when not overridden above */
+.cb-admin-list.cb-admin-tax-layout .cb-admin-table thead th.cb-admin-table__col-thumb,
+.cb-admin-list.cb-admin-tax-layout .cb-admin-table tbody td.cb-admin-table__col-thumb {
+	min-width: 52px;
+	padding: 10px 8px 10px 8px !important;
 }
 
 .cb-admin-table__thumb-wrap {
@@ -1052,31 +1290,28 @@ body.cb-listing-admin-settings-page #wpbody-content .wrap {
 	white-space: nowrap;
 }
 
-.cb-admin-table__col-actions {
-	min-width: 200px;
-	text-align: left;
+/* Actions column: same class on thead th + tbody td; links flush right (width via colgroup on listings) */
+/* Use .cb-admin-table th... so text-align:right beats .cb-admin-table th { text-align: left } */
+.cb-admin-table th.cb-admin-table__col-actions,
+.cb-admin-table td.cb-admin-table__col-actions {
+	min-width: 168px;
+	max-width: 280px;
+	text-align: right;
+	vertical-align: middle;
 	overflow: hidden;
 	text-overflow: ellipsis;
-}
-
-.cb-admin-table__empty {
-	text-align: center;
-	color: var(--cb-admin-muted);
-	padding: 40px !important;
-}
-
-/* Actions: inner flex on <td>; row layout to avoid tall rows */
-.cb-admin-table__actions {
-	text-align: left;
-	vertical-align: middle;
+	padding-left: 12px !important;
+	padding-right: 16px !important;
 
 	.cb-admin-table__actions-inner {
 		display: flex;
 		flex-wrap: nowrap;
-		gap: 0 12px;
+		gap: 0;
 		align-items: center;
-		justify-content: flex-start;
+		justify-content: flex-end;
 		min-width: 0;
+		width: 100%;
+		margin-left: auto;
 	}
 
 	a {
@@ -1088,6 +1323,48 @@ body.cb-listing-admin-settings-page #wpbody-content .wrap {
 		&:hover {
 			text-decoration: underline;
 		}
+	}
+
+	.cb-admin-link-btn {
+		flex-shrink: 0;
+		white-space: nowrap;
+	}
+
+	.cb-admin-table__action-sep {
+		display: inline-block;
+		padding: 0 6px;
+		color: var(--cb-admin-border, #c3c4c7);
+		font-weight: 400;
+		user-select: none;
+		pointer-events: none;
+	}
+}
+
+.cb-admin-table__empty {
+	text-align: center;
+	color: var(--cb-admin-muted);
+	padding: 40px !important;
+}
+
+/* Listings: keep Actions column pinned to the right when table scrolls horizontally */
+.cb-admin-list .cb-admin-table-wrap {
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+.cb-admin-list .cb-admin-table {
+	thead th.cb-admin-table__col-actions,
+	tbody td.cb-admin-table__col-actions {
+		position: sticky;
+		right: 0;
+		z-index: 2;
+		background: #fff;
+		box-shadow: -8px 0 12px -8px rgba(0, 0, 0, 0.12);
+	}
+
+	thead th.cb-admin-table__col-actions {
+		z-index: 3;
+		background: #fafafa;
 	}
 }
 
@@ -1134,9 +1411,57 @@ body.cb-listing-admin-settings-page #wpbody-content .wrap {
 .cb-admin-pagination {
 	display: flex;
 	align-items: center;
-	justify-content: center;
-	gap: 16px;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 12px 20px;
 	margin-top: 20px;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.cb-admin-pagination__left {
+	display: flex;
+	align-items: center;
+	flex-shrink: 0;
+}
+
+.cb-admin-pagination__right {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	flex-shrink: 0;
+	margin-left: auto;
+}
+
+.cb-admin-pagination__per-page {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0;
+	font-size: 13px;
+	color: var(--cb-admin-muted, #646970);
+}
+
+.cb-admin-pagination__per-page-label {
+	white-space: nowrap;
+}
+
+.cb-admin-pagination__per-page-select {
+	min-width: 4.5rem;
+	padding: 4px 8px;
+	font-size: 13px;
+	line-height: 1.5;
+	border: 1px solid var(--cb-admin-border, #dcdcde);
+	border-radius: 4px;
+	background: #fff;
+	color: #1e1e1e;
+	cursor: pointer;
+
+	&:focus {
+		border-color: #2271b1;
+		box-shadow: 0 0 0 1px #2271b1;
+		outline: none;
+	}
 }
 
 /* Settings layout */

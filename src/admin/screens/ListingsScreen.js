@@ -1,16 +1,36 @@
-import { useState, useEffect, useCallback, useRef, Fragment } from '@wordpress/element';
+import {
+	useState,
+	useEffect,
+	useCallback,
+	useRef,
+	Fragment,
+	useMemo,
+} from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import ListingThumb from '../components/ListingThumb';
+import ListingsToolbarExtras from '../components/ListingsToolbarExtras';
 import { useToast } from '../context/ToastContext';
 import {
 	AdminListPageHeader,
 	AdminListToolbarRow,
 	AdminBulkBar,
 	AdminDataTable,
+	AdminTablePagination,
+	useAdminTablePerPage,
 } from '../components/admin-list';
-
-const PER_PAGE = 20;
+import {
+	buildListingColgroup,
+	loadVisibleColumns,
+	saveVisibleColumns,
+	loadSortPrefs,
+	saveSortPrefs,
+	countVisibleDataColumns,
+} from '../features/listings/listingTableConfig';
+import { thumbUrlFromMediaObject } from '../shared/media/thumbFromMedia';
+import { stripTags } from '../shared/html/stripTags';
+import { categoryTermArchiveUrl } from '../features/listings/categoryTermLinks';
+import { getListingCategories } from '../features/listings/getListingCategories';
 
 /** Shimmer rows shown while the first list request is in flight (no circle spinner). */
 const SKELETON_ROW_COUNT = 10;
@@ -23,110 +43,6 @@ const STATUS_TABS = [
 	{ id: 'private', label: __( 'Private', 'cb-listing-anything' ), param: 'private' },
 	{ id: 'trash', label: __( 'Trash', 'cb-listing-anything' ), param: 'trash' },
 ];
-
-function stripTags( html ) {
-	if ( ! html ) {
-		return '';
-	}
-	const d = document.createElement( 'div' );
-	d.innerHTML = html;
-	return d.textContent || d.innerText || '';
-}
-
-/** Thumbnail URL from a media REST object (batch /wp/v2/media). */
-function thumbUrlFromMediaObject( media ) {
-	if ( ! media ) {
-		return '';
-	}
-	const sizes = media.media_details?.sizes;
-	return (
-		sizes?.thumbnail?.source_url ||
-		sizes?.medium?.source_url ||
-		sizes?.woocommerce_thumbnail?.source_url ||
-		media.source_url ||
-		''
-	);
-}
-
-/**
- * Admin term edit URL (fallback when REST omits `link`).
- *
- * @param {number} termId
- * @returns {string}
- */
-function categoryTermEditUrl( termId ) {
-	const { adminUrl, categoryTaxonomy, postType } = window.cbListingAdmin;
-	const base = String( adminUrl || '' ).replace( /\/?$/, '/' );
-	let u;
-	try {
-		u = new URL( 'term.php', base );
-	} catch {
-		u = new URL( 'term.php', window.location.origin + base );
-	}
-	u.searchParams.set( 'taxonomy', categoryTaxonomy );
-	u.searchParams.set( 'tag_ID', String( termId ) );
-	if ( postType ) {
-		u.searchParams.set( 'post_type', postType );
-	}
-	return u.toString();
-}
-
-/**
- * Public term archive URL from REST `term.link` (see WP_REST_Terms_Controller).
- *
- * @param {{ id?: number, link?: string }} term
- * @returns {string}
- */
-function categoryTermArchiveUrl( term ) {
-	if ( term && typeof term.link === 'string' && term.link.trim() !== '' ) {
-		return term.link;
-	}
-	if ( term?.id ) {
-		return categoryTermEditUrl( term.id );
-	}
-	return '#';
-}
-
-/**
- * Listing categories from REST `_embedded['wp:term']`, or from `termsById` + post taxonomy IDs.
- *
- * @param {Object} post
- * @param {string} categoryTaxonomy
- * @param {Record<number, { id: number, name: string, taxonomy: string, link?: string }>} [termsById]
- * @param {string} [categoryRestBase] REST base for category taxonomy (fallback field name on post).
- * @returns {Array<{ id: number, name: string, taxonomy: string, link?: string }>}
- */
-function getListingCategories( post, categoryTaxonomy, termsById, categoryRestBase ) {
-	const embedded = post._embedded?.[ 'wp:term' ];
-	if ( Array.isArray( embedded ) ) {
-		const flat = embedded.flat().filter( Boolean );
-		const fromEmbed = flat
-			.filter( ( t ) => t.taxonomy === categoryTaxonomy )
-			.sort( ( a, b ) =>
-				( a.name || '' ).localeCompare( b.name || '', undefined, { sensitivity: 'base' } )
-			);
-		if ( fromEmbed.length ) {
-			return fromEmbed;
-		}
-	}
-
-	let raw = post[ categoryTaxonomy ];
-	if ( raw == null && categoryRestBase && post[ categoryRestBase ] != null ) {
-		raw = post[ categoryRestBase ];
-	}
-	const ids = Array.isArray( raw )
-		? raw.map( ( id ) => Number( id ) ).filter( ( id ) => id > 0 )
-		: [];
-	if ( ! ids.length || ! termsById || typeof termsById !== 'object' ) {
-		return [];
-	}
-	return ids
-		.map( ( id ) => termsById[ id ] )
-		.filter( Boolean )
-		.sort( ( a, b ) =>
-			( a.name || '' ).localeCompare( b.name || '', undefined, { sensitivity: 'base' } )
-		);
-}
 
 export default function ListingsScreen() {
 	const { restBase, adminUrl, categoryTaxonomy, categoryRestBase, allItemsLabel } =
@@ -152,14 +68,34 @@ export default function ListingsScreen() {
 	/** Term id → term object when `_embed` omits `wp:term` but post has taxonomy IDs. */
 	const [ categoryTermsById, setCategoryTermsById ] = useState( {} );
 	const selectAllRef = useRef( null );
+	const [ perPage, setPerPage ] = useAdminTablePerPage( 'listings', 20 );
+	const [ orderby, setOrderby ] = useState( () => loadSortPrefs().orderby );
+	const [ order, setOrder ] = useState( () => loadSortPrefs().order );
+	const [ visibleColumns, setVisibleColumns ] = useState( () =>
+		loadVisibleColumns()
+	);
+
+	const colgroupWidths = useMemo(
+		() => buildListingColgroup( visibleColumns ),
+		[ visibleColumns ]
+	);
+	const dataColumnCount = useMemo(
+		() => countVisibleDataColumns( visibleColumns ),
+		[ visibleColumns ]
+	);
+	const emptyColSpan = 2 + dataColumnCount;
 
 	const pathForFetch = useCallback( () => {
 		const params = new URLSearchParams();
 		params.set( 'context', 'edit' );
-		params.set( 'per_page', String( PER_PAGE ) );
+		params.set( 'per_page', String( perPage ) );
 		params.set( 'page', String( page ) );
-		params.set( 'orderby', 'date' );
-		params.set( 'order', 'desc' );
+		let ob = orderby;
+		if ( ob === 'relevance' && ! activeSearch.trim() ) {
+			ob = 'date';
+		}
+		params.set( 'orderby', ob );
+		params.set( 'order', order );
 		if ( activeSearch.trim() ) {
 			params.set( 'search', activeSearch.trim() );
 		}
@@ -171,7 +107,33 @@ export default function ListingsScreen() {
 		}
 		params.set( '_embed', '1' );
 		return `wp/v2/${ restBase }?${ params.toString() }`;
-	}, [ restBase, page, activeSearch, statusFilter ] );
+	}, [
+		restBase,
+		page,
+		perPage,
+		orderby,
+		order,
+		activeSearch,
+		statusFilter,
+	] );
+
+	useEffect( () => {
+		if ( ! activeSearch.trim() && orderby === 'relevance' ) {
+			setOrderby( 'date' );
+		}
+	}, [ activeSearch, orderby ] );
+
+	const handleSortApply = useCallback( ( ob, ord ) => {
+		setOrderby( ob );
+		setOrder( ord );
+		saveSortPrefs( ob, ord );
+		setPage( 1 );
+	}, [] );
+
+	const handleColumnsApply = useCallback( ( cols ) => {
+		setVisibleColumns( cols );
+		saveVisibleColumns( cols );
+	}, [] );
 
 	const load = useCallback( async () => {
 		setLoading( true );
@@ -362,7 +324,7 @@ export default function ListingsScreen() {
 	useEffect( () => {
 		setSelectedIds( new Set() );
 		setBulkAction( '' );
-	}, [ page, statusFilter, activeSearch ] );
+	}, [ page, perPage, statusFilter, activeSearch ] );
 
 	useEffect( () => {
 		const el = selectAllRef.current;
@@ -612,33 +574,37 @@ export default function ListingsScreen() {
 						</>
 					}
 					end={
-						<form className="cb-admin-list__search" onSubmit={ onSearchSubmit }>
-							<input
-								type="search"
-								className="cb-admin-list__search-input"
-								placeholder={ __( 'Search…', 'cb-listing-anything' ) }
-								value={ searchInput }
-								onChange={ ( e ) => setSearchInput( e.target.value ) }
+						<div className="cb-admin-list__toolbar-end">
+							<form className="cb-admin-list__search" onSubmit={ onSearchSubmit }>
+								<input
+									type="search"
+									className="cb-admin-list__search-input"
+									placeholder={ __( 'Search…', 'cb-listing-anything' ) }
+									value={ searchInput }
+									onChange={ ( e ) => setSearchInput( e.target.value ) }
+								/>
+								<button type="submit" className="cb-admin-app__btn cb-admin-app__btn--ghost">
+									{ __( 'Search', 'cb-listing-anything' ) }
+								</button>
+							</form>
+							<ListingsToolbarExtras
+								orderby={ orderby }
+								order={ order }
+								onSortApply={ handleSortApply }
+								hasSearch={ Boolean( activeSearch.trim() ) }
+								visibleColumns={ visibleColumns }
+								onColumnsApply={ handleColumnsApply }
 							/>
-							<button type="submit" className="cb-admin-app__btn cb-admin-app__btn--ghost">
-								{ __( 'Search', 'cb-listing-anything' ) }
-							</button>
-						</form>
+						</div>
 					}
 				/>
 			</div>
 
 			<AdminDataTable ariaBusy={ loading }>
 						<colgroup>
-							<col style={ { width: '4%' } } />
-							<col style={ { width: '3%' } } />
-							<col style={ { width: '8%' } } />
-							<col style={ { width: '22%' } } />
-							<col style={ { width: '9%' } } />
-							<col style={ { width: '14%' } } />
-							<col style={ { width: '10%' } } />
-							<col style={ { width: '11%' } } />
-							<col style={ { width: '19%' } } />
+							{ colgroupWidths.map( ( c, i ) => (
+								<col key={ `cb-col-${ i }` } style={ { width: c.width } } />
+							) ) }
 						</colgroup>
 						<thead>
 							<tr>
@@ -654,33 +620,47 @@ export default function ListingsScreen() {
 										aria-label={ __( 'Select all', 'cb-listing-anything' ) }
 									/>
 								</th>
-								<th className="cb-admin-table__col-num" scope="col">
-									{ __( '#', 'cb-listing-anything' ) }
-								</th>
-								<th
-									className="cb-admin-table__col-thumb"
-									scope="col"
-									title={ __( 'Featured image', 'cb-listing-anything' ) }
-								>
-									<span className="cb-admin-table__col-thumb-label">
-										{ __( 'Image', 'cb-listing-anything' ) }
-									</span>
-								</th>
-								<th className="cb-admin-table__col-title" scope="col">
-									{ __( 'Title', 'cb-listing-anything' ) }
-								</th>
-								<th className="cb-admin-table__col-status" scope="col">
-									{ __( 'Status', 'cb-listing-anything' ) }
-								</th>
-								<th className="cb-admin-table__col-categories" scope="col">
-									{ __( 'Categories', 'cb-listing-anything' ) }
-								</th>
-								<th className="cb-admin-table__col-author" scope="col">
-									{ __( 'Author', 'cb-listing-anything' ) }
-								</th>
-								<th className="cb-admin-table__col-date" scope="col">
-									{ __( 'Date', 'cb-listing-anything' ) }
-								</th>
+								{ visibleColumns.num && (
+									<th className="cb-admin-table__col-num" scope="col">
+										{ __( '#', 'cb-listing-anything' ) }
+									</th>
+								) }
+								{ visibleColumns.thumb && (
+									<th
+										className="cb-admin-table__col-thumb"
+										scope="col"
+										title={ __( 'Featured image', 'cb-listing-anything' ) }
+									>
+										<span className="cb-admin-table__col-thumb-label">
+											{ __( 'Image', 'cb-listing-anything' ) }
+										</span>
+									</th>
+								) }
+								{ visibleColumns.title && (
+									<th className="cb-admin-table__col-title" scope="col">
+										{ __( 'Title', 'cb-listing-anything' ) }
+									</th>
+								) }
+								{ visibleColumns.status && (
+									<th className="cb-admin-table__col-status" scope="col">
+										{ __( 'Status', 'cb-listing-anything' ) }
+									</th>
+								) }
+								{ visibleColumns.categories && (
+									<th className="cb-admin-table__col-categories" scope="col">
+										{ __( 'Categories', 'cb-listing-anything' ) }
+									</th>
+								) }
+								{ visibleColumns.author && (
+									<th className="cb-admin-table__col-author" scope="col">
+										{ __( 'Author', 'cb-listing-anything' ) }
+									</th>
+								) }
+								{ visibleColumns.date && (
+									<th className="cb-admin-table__col-date" scope="col">
+										{ __( 'Date', 'cb-listing-anything' ) }
+									</th>
+								) }
 								<th className="cb-admin-table__col-actions" scope="col">
 									{ __( 'Actions', 'cb-listing-anything' ) }
 								</th>
@@ -698,28 +678,42 @@ export default function ListingsScreen() {
 											<td className="cb-admin-table__col-check">
 												<span className="cb-admin-table__skeleton-box cb-admin-table__skeleton-box--check" />
 											</td>
-											<td className="cb-admin-table__col-num">
-												<span className="cb-admin-table__skeleton-line cb-admin-table__skeleton-line--num" />
-											</td>
-											<td className="cb-admin-table__col-thumb">
-												<span className="cb-admin-table__thumb-skeleton" />
-											</td>
-											<td className="cb-admin-table__col-title">
-												<span className="cb-admin-table__skeleton-line cb-admin-table__skeleton-line--title" />
-											</td>
-											<td className="cb-admin-table__col-status">
-												<span className="cb-admin-table__skeleton-line cb-admin-table__skeleton-line--badge" />
-											</td>
-											<td className="cb-admin-table__col-categories">
-												<span className="cb-admin-table__skeleton-line" />
-											</td>
-											<td className="cb-admin-table__col-author">
-												<span className="cb-admin-table__skeleton-line cb-admin-table__skeleton-line--author" />
-											</td>
-											<td className="cb-admin-table__col-date">
-												<span className="cb-admin-table__skeleton-line cb-admin-table__skeleton-line--date" />
-											</td>
-											<td className="cb-admin-table__actions">
+											{ visibleColumns.num && (
+												<td className="cb-admin-table__col-num">
+													<span className="cb-admin-table__skeleton-line cb-admin-table__skeleton-line--num" />
+												</td>
+											) }
+											{ visibleColumns.thumb && (
+												<td className="cb-admin-table__col-thumb">
+													<span className="cb-admin-table__thumb-skeleton" />
+												</td>
+											) }
+											{ visibleColumns.title && (
+												<td className="cb-admin-table__col-title">
+													<span className="cb-admin-table__skeleton-line cb-admin-table__skeleton-line--title" />
+												</td>
+											) }
+											{ visibleColumns.status && (
+												<td className="cb-admin-table__col-status">
+													<span className="cb-admin-table__skeleton-line cb-admin-table__skeleton-line--badge" />
+												</td>
+											) }
+											{ visibleColumns.categories && (
+												<td className="cb-admin-table__col-categories">
+													<span className="cb-admin-table__skeleton-line" />
+												</td>
+											) }
+											{ visibleColumns.author && (
+												<td className="cb-admin-table__col-author">
+													<span className="cb-admin-table__skeleton-line cb-admin-table__skeleton-line--author" />
+												</td>
+											) }
+											{ visibleColumns.date && (
+												<td className="cb-admin-table__col-date">
+													<span className="cb-admin-table__skeleton-line cb-admin-table__skeleton-line--date" />
+												</td>
+											) }
+											<td className="cb-admin-table__col-actions">
 												<span className="cb-admin-table__skeleton-line cb-admin-table__skeleton-line--actions" />
 											</td>
 										</tr>
@@ -727,7 +721,7 @@ export default function ListingsScreen() {
 								) }
 							{ ! loading && rows.length === 0 && (
 								<tr>
-									<td colSpan={ 9 } className="cb-admin-table__empty">
+									<td colSpan={ emptyColSpan } className="cb-admin-table__empty">
 										{ __( 'No listings found.', 'cb-listing-anything' ) }
 									</td>
 								</tr>
@@ -763,62 +757,84 @@ export default function ListingsScreen() {
 											) }
 										/>
 									</td>
-									<td className="cb-admin-table__col-num">
-										{ ( page - 1 ) * PER_PAGE + index + 1 }
-									</td>
-									<td className="cb-admin-table__col-thumb">
-										<ListingThumb
-											src={ thumbSrc }
-											alt={ thumbAlt }
-											fetchPriority="low"
-										/>
-									</td>
-									<td className="cb-admin-table__col-title">
-										<strong>
-											{ post.title?.rendered
-												? stripTags( post.title.rendered )
-												: __( '(no title)', 'cb-listing-anything' ) }
-										</strong>
-									</td>
-									<td className="cb-admin-table__col-status">
-										<span className={ `cb-admin-badge cb-admin-badge--${ post.status }` }>{ post.status }</span>
-									</td>
-									<td className="cb-admin-table__col-categories">
-										{ categories.length === 0 ? (
-											<span className="cb-admin-table__categories-empty">—</span>
-										) : (
-											<span className="cb-admin-table__categories-list">
-												{ categories.map( ( term, ci ) => (
-													<Fragment key={ term.id }>
-														{ ci > 0 ? (
-															<span className="cb-admin-table__categories-sep" aria-hidden="true">
-																{ ', ' }
-															</span>
-														) : null }
-														<a
-															className="cb-admin-table__category-link"
-															href={ categoryTermArchiveUrl( term ) }
-															target="_blank"
-															rel="noopener noreferrer"
-														>
-															{ stripTags( term.name ) }
-														</a>
-													</Fragment>
-												) ) }
-											</span>
-										) }
-									</td>
-									<td className="cb-admin-table__col-author">{ authorName( post ) }</td>
-									<td className="cb-admin-table__col-date">{ fmtDate( post.date ) }</td>
-									<td className="cb-admin-table__actions">
+									{ visibleColumns.num && (
+										<td className="cb-admin-table__col-num">
+											{ ( page - 1 ) * perPage + index + 1 }
+										</td>
+									) }
+									{ visibleColumns.thumb && (
+										<td className="cb-admin-table__col-thumb">
+											<ListingThumb
+												src={ thumbSrc }
+												alt={ thumbAlt }
+												fetchPriority="low"
+											/>
+										</td>
+									) }
+									{ visibleColumns.title && (
+										<td className="cb-admin-table__col-title">
+											<strong>
+												{ post.title?.rendered
+													? stripTags( post.title.rendered )
+													: __( '(no title)', 'cb-listing-anything' ) }
+											</strong>
+										</td>
+									) }
+									{ visibleColumns.status && (
+										<td className="cb-admin-table__col-status">
+											<span className={ `cb-admin-badge cb-admin-badge--${ post.status }` }>{ post.status }</span>
+										</td>
+									) }
+									{ visibleColumns.categories && (
+										<td className="cb-admin-table__col-categories">
+											{ categories.length === 0 ? (
+												<span className="cb-admin-table__categories-empty">—</span>
+											) : (
+												<span className="cb-admin-table__categories-list">
+													{ categories.map( ( term, ci ) => (
+														<Fragment key={ term.id }>
+															{ ci > 0 ? (
+																<span className="cb-admin-table__categories-sep" aria-hidden="true">
+																	{ ', ' }
+																</span>
+															) : null }
+															<a
+																className="cb-admin-table__category-link"
+																href={ categoryTermArchiveUrl( term ) }
+																target="_blank"
+																rel="noopener noreferrer"
+															>
+																{ stripTags( term.name ) }
+															</a>
+														</Fragment>
+													) ) }
+												</span>
+											) }
+										</td>
+									) }
+									{ visibleColumns.author && (
+										<td className="cb-admin-table__col-author">{ authorName( post ) }</td>
+									) }
+									{ visibleColumns.date && (
+										<td className="cb-admin-table__col-date">{ fmtDate( post.date ) }</td>
+									) }
+									<td className="cb-admin-table__col-actions">
 										<div className="cb-admin-table__actions-inner">
 											{ post.status !== 'trash' ? (
 												<>
 													<a href={ editUrl( post.id ) }>{ __( 'Edit', 'cb-listing-anything' ) }</a>
+													<span className="cb-admin-table__action-sep" aria-hidden="true">
+														|
+													</span>
 													{ post.link && (
-														<a href={ post.link } target="_blank" rel="noreferrer">
-															{ __( 'View', 'cb-listing-anything' ) }
-														</a>
+														<>
+															<a href={ post.link } target="_blank" rel="noreferrer">
+																{ __( 'View', 'cb-listing-anything' ) }
+															</a>
+															<span className="cb-admin-table__action-sep" aria-hidden="true">
+																|
+															</span>
+														</>
 													) }
 													<button type="button" className="cb-admin-link-btn" onClick={ () => trashPost( post.id ) }>
 														{ __( 'Trash', 'cb-listing-anything' ) }
@@ -829,6 +845,9 @@ export default function ListingsScreen() {
 													<button type="button" className="cb-admin-link-btn" onClick={ () => restorePost( post.id ) }>
 														{ __( 'Restore', 'cb-listing-anything' ) }
 													</button>
+													<span className="cb-admin-table__action-sep" aria-hidden="true">
+														|
+													</span>
 													<button type="button" className="cb-admin-link-btn" onClick={ () => deletePermanent( post.id ) }>
 														{ __( 'Delete permanently', 'cb-listing-anything' ) }
 													</button>
@@ -842,34 +861,19 @@ export default function ListingsScreen() {
 						</tbody>
 			</AdminDataTable>
 
-			{ totalPages > 1 && (
-				<div className="cb-admin-pagination">
-					<button
-						type="button"
-						className="cb-admin-app__btn cb-admin-app__btn--ghost"
-						disabled={ page <= 1 }
-						onClick={ () => setPage( ( p ) => Math.max( 1, p - 1 ) ) }
-					>
-						{ __( 'Previous', 'cb-listing-anything' ) }
-					</button>
-					<span className="cb-admin-pagination__status">
-						{ sprintf(
-							/* translators: 1: current page 2: total pages */
-							__( 'Page %1$d of %2$d', 'cb-listing-anything' ),
-							page,
-							totalPages
-						) }
-					</span>
-					<button
-						type="button"
-						className="cb-admin-app__btn cb-admin-app__btn--ghost"
-						disabled={ page >= totalPages }
-						onClick={ () => setPage( ( p ) => Math.min( totalPages, p + 1 ) ) }
-					>
-						{ __( 'Next', 'cb-listing-anything' ) }
-					</button>
-				</div>
-			) }
+			<AdminTablePagination
+				page={ page }
+				totalPages={ totalPages }
+				perPage={ perPage }
+				onPerPageChange={ ( n ) => {
+					setPerPage( n );
+					setPage( 1 );
+				} }
+				onPrev={ () => setPage( ( p ) => Math.max( 1, p - 1 ) ) }
+				onNext={ () =>
+					setPage( ( p ) => Math.min( Math.max( 1, totalPages || 1 ), p + 1 ) )
+				}
+			/>
 		</div>
 	);
 }

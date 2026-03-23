@@ -1,19 +1,7 @@
 import { useState, useEffect, useCallback } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
-
-function thumbUrlFromMediaObject( media ) {
-	if ( ! media ) {
-		return '';
-	}
-	const sizes = media.media_details?.sizes;
-	return (
-		sizes?.thumbnail?.source_url ||
-		sizes?.medium?.source_url ||
-		media.source_url ||
-		''
-	);
-}
+import { thumbUrlFromMediaObject } from '../shared/media/thumbFromMedia';
 
 /**
  * Attachment ID picker using wp.media (enqueue_media on PHP).

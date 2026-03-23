@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from '@wordpress/element';
+import { useState, useCallback, RawHTML } from '@wordpress/element';
 import { __, sprintf, _n } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import TermEditModal from '../components/TermEditModal';
@@ -8,9 +8,11 @@ import {
 	AdminListToolbarRow,
 	AdminBulkBar,
 	AdminDataTable,
+	AdminTablePagination,
 } from '../components/admin-list';
+import TaxonomyTableToolbarExtras from '../components/TaxonomyTableToolbarExtras';
+import { useWpTermCollection } from '../taxonomies/useWpTermCollection';
 
-const PER_PAGE = 20;
 const SKELETON_ROW_COUNT = 10;
 
 export default function TagsScreen() {
@@ -18,112 +20,46 @@ export default function TagsScreen() {
 	const { showToast } = useToast();
 	const { showConfirm } = useConfirmDialog();
 
-	const [ searchInput, setSearchInput ] = useState( '' );
-	const [ activeSearch, setActiveSearch ] = useState( '' );
-	const [ page, setPage ] = useState( 1 );
-	const [ loading, setLoading ] = useState( true );
-	const [ rows, setRows ] = useState( [] );
-	const [ totalPages, setTotalPages ] = useState( 1 );
-	const [ totalItems, setTotalItems ] = useState( 0 );
-	const [ selectedIds, setSelectedIds ] = useState( () => new Set() );
-	const [ bulkBusy, setBulkBusy ] = useState( false );
-	const [ bulkAction, setBulkAction ] = useState( '' );
+	const {
+		searchInput,
+		setSearchInput,
+		page,
+		setPage,
+		loading,
+		rows,
+		totalPages,
+		totalItems,
+		selectedIds,
+		setSelectedIds,
+		bulkBusy,
+		setBulkBusy,
+		bulkAction,
+		setBulkAction,
+		selectAllRef,
+		perPage,
+		setPerPage,
+		orderby,
+		order,
+		visibleColumns,
+		colgroupWidths,
+		emptyColSpan,
+		load,
+		handleSortApply,
+		handleColumnsApply,
+		toggleSelectAll,
+		toggleRowSelected,
+		onSearchSubmit,
+	} = useWpTermCollection( {
+		restBase: tagRestBase,
+		variant: 'tags',
+		loadErrorMessage: __( 'Could not load tags.', 'cb-listing-anything' ),
+	} );
+
 	const [ formName, setFormName ] = useState( '' );
 	const [ formSlug, setFormSlug ] = useState( '' );
 	const [ formDesc, setFormDesc ] = useState( '' );
 	const [ formBusy, setFormBusy ] = useState( false );
 	const [ editTermId, setEditTermId ] = useState( null );
-	const selectAllRef = useRef( null );
-
-	const pathForFetch = useCallback( () => {
-		const params = new URLSearchParams();
-		params.set( 'context', 'edit' );
-		params.set( 'per_page', String( PER_PAGE ) );
-		params.set( 'page', String( page ) );
-		params.set( 'orderby', 'name' );
-		params.set( 'order', 'asc' );
-		if ( activeSearch.trim() ) {
-			params.set( 'search', activeSearch.trim() );
-		}
-		return `wp/v2/${ tagRestBase }?${ params.toString() }`;
-	}, [ tagRestBase, page, activeSearch ] );
-
-	const load = useCallback( async () => {
-		setLoading( true );
-		try {
-			const response = await apiFetch( {
-				path: pathForFetch(),
-				parse: false,
-			} );
-			if ( ! response.ok ) {
-				const errBody = await response.json().catch( () => ( {} ) );
-				throw new Error(
-					errBody.message ||
-						response.statusText ||
-						__( 'Request failed.', 'cb-listing-anything' )
-				);
-			}
-			const data = await response.json();
-			const total = response.headers.get( 'X-WP-Total' );
-			const pages = response.headers.get( 'X-WP-TotalPages' );
-			setRows( Array.isArray( data ) ? data : [] );
-			setTotalItems( total ? parseInt( total, 10 ) : 0 );
-			setTotalPages( pages ? parseInt( pages, 10 ) : 1 );
-		} catch ( e ) {
-			showToast(
-				e.message || __( 'Could not load tags.', 'cb-listing-anything' ),
-				'error'
-			);
-			setRows( [] );
-		} finally {
-			setLoading( false );
-		}
-	}, [ pathForFetch, showToast ] );
-
-	useEffect( () => {
-		load();
-	}, [ load ] );
-
-	useEffect( () => {
-		setSelectedIds( new Set() );
-		setBulkAction( '' );
-	}, [ page, activeSearch ] );
-
-	useEffect( () => {
-		const el = selectAllRef.current;
-		if ( ! el ) {
-			return;
-		}
-		if ( rows.length === 0 ) {
-			el.indeterminate = false;
-			return;
-		}
-		el.indeterminate =
-			selectedIds.size > 0 && selectedIds.size < rows.length;
-	}, [ selectedIds, rows ] );
-
-	const toggleSelectAll = () => {
-		if ( rows.length === 0 ) {
-			return;
-		}
-		if ( selectedIds.size === rows.length ) {
-			setSelectedIds( new Set() );
-		} else {
-			setSelectedIds( new Set( rows.map( ( r ) => r.id ) ) );
-		}
-	};
-
-	const toggleRowSelected = ( id ) => {
-		setSelectedIds( ( prev ) => {
-			const next = new Set( prev );
-			if ( next.has( id ) ) {
-				next.delete( id );
-			} else {
-				next.add( id );
-			}
-			return next;
-		} );
-	};
 
 	const bulkApply = async () => {
 		if ( selectedIds.size === 0 || bulkAction !== 'delete' ) {
@@ -181,12 +117,6 @@ export default function TagsScreen() {
 		} finally {
 			setBulkBusy( false );
 		}
-	};
-
-	const onSearchSubmit = ( ev ) => {
-		ev.preventDefault();
-		setActiveSearch( searchInput );
-		setPage( 1 );
 	};
 
 	const onAddSubmit = async ( ev ) => {
@@ -371,24 +301,32 @@ export default function TagsScreen() {
 								/>
 							}
 							end={
-								<p className="cb-admin-list__count">
-									{ sprintf(
-										/* translators: %d: number of tags */
-										__( '%d items', 'cb-listing-anything' ),
-										totalItems
-									) }
-								</p>
+								<div className="cb-admin-list__toolbar-end">
+									<p className="cb-admin-list__count">
+										{ sprintf(
+											/* translators: %d: number of tags */
+											__( '%d items', 'cb-listing-anything' ),
+											totalItems
+										) }
+									</p>
+									<TaxonomyTableToolbarExtras
+										variant="tags"
+										orderby={ orderby }
+										order={ order }
+										onSortApply={ handleSortApply }
+										visibleColumns={ visibleColumns }
+										onColumnsApply={ handleColumnsApply }
+									/>
+								</div>
 							}
 						/>
 					</div>
 
 					<AdminDataTable ariaBusy={ loading }>
 						<colgroup>
-							<col style={ { width: '4%' } } />
-							<col style={ { width: '34%' } } />
-							<col style={ { width: '28%' } } />
-							<col style={ { width: '12%' } } />
-							<col style={ { width: '22%' } } />
+							{ colgroupWidths.map( ( c, i ) => (
+								<col key={ i } style={ { width: c.width } } />
+							) ) }
 						</colgroup>
 						<thead>
 							<tr>
@@ -402,9 +340,20 @@ export default function TagsScreen() {
 										aria-label={ __( 'Select all', 'cb-listing-anything' ) }
 									/>
 								</th>
-								<th scope="col">{ __( 'Name', 'cb-listing-anything' ) }</th>
-								<th scope="col">{ __( 'Slug', 'cb-listing-anything' ) }</th>
-								<th scope="col">{ __( 'Count', 'cb-listing-anything' ) }</th>
+								{ visibleColumns.name && (
+									<th scope="col">{ __( 'Name', 'cb-listing-anything' ) }</th>
+								) }
+								{ visibleColumns.description && (
+									<th className="cb-admin-table__col-description" scope="col">
+										{ __( 'Description', 'cb-listing-anything' ) }
+									</th>
+								) }
+								{ visibleColumns.slug && (
+									<th scope="col">{ __( 'Slug', 'cb-listing-anything' ) }</th>
+								) }
+								{ visibleColumns.count && (
+									<th scope="col">{ __( 'Count', 'cb-listing-anything' ) }</th>
+								) }
 								<th className="cb-admin-table__col-actions" scope="col">
 									{ __( 'Actions', 'cb-listing-anything' ) }
 								</th>
@@ -420,15 +369,26 @@ export default function TagsScreen() {
 										aria-hidden="true"
 									>
 										<td><span className="cb-admin-table__skeleton-box cb-admin-table__skeleton-box--check" /></td>
-										<td><span className="cb-admin-table__skeleton-line cb-admin-table__skeleton-line--title" /></td>
-										<td><span className="cb-admin-table__skeleton-line" /></td>
-										<td><span className="cb-admin-table__skeleton-line cb-admin-table__skeleton-line--num" /></td>
+										{ visibleColumns.name && (
+											<td><span className="cb-admin-table__skeleton-line cb-admin-table__skeleton-line--title" /></td>
+										) }
+										{ visibleColumns.description && (
+											<td>
+												<span className="cb-admin-table__skeleton-line cb-admin-table__skeleton-line--desc" />
+											</td>
+										) }
+										{ visibleColumns.slug && (
+											<td><span className="cb-admin-table__skeleton-line" /></td>
+										) }
+										{ visibleColumns.count && (
+											<td><span className="cb-admin-table__skeleton-line cb-admin-table__skeleton-line--num" /></td>
+										) }
 										<td><span className="cb-admin-table__skeleton-line cb-admin-table__skeleton-line--actions" /></td>
 									</tr>
 								) ) }
 							{ ! loading && rows.length === 0 && (
 								<tr>
-									<td colSpan={ 5 } className="cb-admin-table__empty">
+									<td colSpan={ emptyColSpan } className="cb-admin-table__empty">
 										{ __( 'No tags found.', 'cb-listing-anything' ) }
 									</td>
 								</tr>
@@ -447,20 +407,35 @@ export default function TagsScreen() {
 												) }
 											/>
 										</td>
-										<td>
-											<strong>
-												<button
-													type="button"
-													className="cb-admin-tax-layout__name-link"
-													onClick={ () => openEditModal( term.id ) }
-												>
-													{ term.name }
-												</button>
-											</strong>
-										</td>
-										<td>{ term.slug }</td>
-										<td>{ term.count }</td>
-										<td className="cb-admin-table__actions">
+										{ visibleColumns.name && (
+											<td>
+												<strong>
+													<button
+														type="button"
+														className="cb-admin-tax-layout__name-link"
+														onClick={ () => openEditModal( term.id ) }
+													>
+														{ term.name }
+													</button>
+												</strong>
+											</td>
+										) }
+										{ visibleColumns.description && (
+											<td className="cb-admin-table__col-description">
+												{ term.description ? (
+													<div className="cb-admin-table__term-description">
+														<RawHTML>{ term.description }</RawHTML>
+													</div>
+												) : (
+													<span className="cb-admin-table__empty-cell" aria-hidden="true">
+														—
+													</span>
+												) }
+											</td>
+										) }
+										{ visibleColumns.slug && <td>{ term.slug }</td> }
+										{ visibleColumns.count && <td>{ term.count }</td> }
+										<td className="cb-admin-table__col-actions">
 											<span className="cb-admin-tax-layout__action-row">
 												<button
 													type="button"
@@ -486,34 +461,21 @@ export default function TagsScreen() {
 						</tbody>
 					</AdminDataTable>
 
-					{ totalPages > 1 && (
-						<div className="cb-admin-pagination">
-							<button
-								type="button"
-								className="cb-admin-app__btn cb-admin-app__btn--ghost"
-								disabled={ page <= 1 }
-								onClick={ () => setPage( ( p ) => Math.max( 1, p - 1 ) ) }
-							>
-								{ __( 'Previous', 'cb-listing-anything' ) }
-							</button>
-							<span className="cb-admin-pagination__status">
-								{ sprintf(
-									/* translators: 1: current page 2: total pages */
-									__( 'Page %1$d of %2$d', 'cb-listing-anything' ),
-									page,
-									totalPages
-								) }
-							</span>
-							<button
-								type="button"
-								className="cb-admin-app__btn cb-admin-app__btn--ghost"
-								disabled={ page >= totalPages }
-								onClick={ () => setPage( ( p ) => Math.min( totalPages, p + 1 ) ) }
-							>
-								{ __( 'Next', 'cb-listing-anything' ) }
-							</button>
-						</div>
-					) }
+					<AdminTablePagination
+						page={ page }
+						totalPages={ totalPages }
+						perPage={ perPage }
+						onPerPageChange={ ( n ) => {
+							setPerPage( n );
+							setPage( 1 );
+						} }
+						onPrev={ () => setPage( ( p ) => Math.max( 1, p - 1 ) ) }
+						onNext={ () =>
+							setPage( ( p ) =>
+								Math.min( Math.max( 1, totalPages || 1 ), p + 1 )
+							)
+						}
+					/>
 				</div>
 			</div>
 
