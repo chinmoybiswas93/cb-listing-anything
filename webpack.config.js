@@ -1,8 +1,12 @@
 /**
- * Extends @wordpress/scripts to compile blocks + admin app in one webpack process.
- * Avoids two `wp-scripts start` watchers (fixes EMFILE / "too many open files" on macOS).
+ * Single webpack config for blocks + admin app.
  *
- * @wordpress/scripts uses entry: () => ({ ... }) — we must wrap that function, not spread it.
+ * @wordpress/scripts discovers entries from src/blocks (via --webpack-src-dir) and
+ * copies block render PHP per block.json. This file adds the admin SPA entry so
+ * one `wp-scripts build` / `wp-scripts start` compiles everything — no second
+ * process, no manual file copies, and fewer open file watchers (macOS EMFILE).
+ *
+ * @wordpress/scripts uses entry: () => ({ ... }) — wrap that function, do not spread it.
  */
 const path = require( 'path' );
 const wpConfig = require( '@wordpress/scripts/config/webpack.config' );

@@ -105,6 +105,15 @@ $listings = new WP_Query( $args );
 
 The plugin follows WordPress coding standards and can be extended using standard WordPress hooks and filters.
 
+## Development (build)
+
+Block editor sources live under `src/blocks/`, the custom admin UI under `src/admin/`. A single webpack config (`webpack.config.js`) merges the admin app with `@wordpress/scripts` so **one** command compiles blocks and admin assets into `build/`.
+
+- **Production:** `npm run build`
+- **Watch (local):** `npm start`
+
+PHP `render.php` files referenced in each block’s `block.json` are copied into `build/` by `@wordpress/scripts` automatically.
+
 ## Requirements
 
 - WordPress 5.0 or higher
