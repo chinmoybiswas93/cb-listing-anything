@@ -7,6 +7,6 @@
 		"start": "wp-scripts start --webpack-src-dir=src/blocks --output-path=build"
 	},
 	"devDependencies": {
-		"@wordpress/scripts": "^30.0.0"
+		"@wordpress/scripts": "^31.7.0"
 	}
 }
